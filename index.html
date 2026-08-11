@@ -79,7 +79,128 @@
       text-align: center;
       font-weight: bold;
     }
+/* =========================
+   DATA MURID
+   ========================= */
 
+.form-input {
+
+  width: 100%;
+
+  padding: 13px;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 10px;
+
+  margin-top: 10px;
+
+  font-size: 16px;
+
+  outline: none;
+
+}
+
+
+.form-input:focus {
+
+  border-color: #111827;
+
+}
+
+
+.student-card {
+
+  background: white;
+
+  border-radius: 16px;
+
+  padding: 16px;
+
+  margin-bottom: 12px;
+
+  box-shadow:
+    0 4px 15px
+    rgba(0,0,0,0.06);
+
+}
+
+
+.student-card-name {
+
+  font-size: 19px;
+
+  font-weight: bold;
+
+}
+
+
+.student-card-info {
+
+  margin-top: 5px;
+
+  color: #6b7280;
+
+  font-size: 14px;
+
+}
+
+
+.student-qr {
+
+  width: 120px;
+
+  height: 120px;
+
+  object-fit: contain;
+
+  margin-top: 12px;
+
+}
+
+
+.student-actions {
+
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 12px;
+
+}
+
+
+.student-actions button {
+
+  flex: 1;
+
+  border: none;
+
+  border-radius: 9px;
+
+  padding: 10px;
+
+  cursor: pointer;
+
+  font-weight: bold;
+
+}
+
+
+.edit-button {
+
+  background: #e5e7eb;
+
+}
+
+
+.delete-button {
+
+  background: #fee2e2;
+
+  color: #991b1b;
+
+}
   </style>
 
 </head>
@@ -191,6 +312,524 @@
     });
 
   }
+  /* ==================================================
+   DATA MURID
+   ================================================== */
+
+let allStudents = [];
+
+
+/**
+ * Load students.
+ */
+function loadStudents() {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(students) {
+
+        allStudents =
+          students || [];
+
+        displayStudents(
+          allStudents
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        alert(
+          'Gagal memuatkan data murid: ' +
+          error.message
+        );
+
+      }
+    )
+
+    .getStudents();
+
+}
+
+
+/**
+ * Display student list.
+ */
+function displayStudents(
+  students
+) {
+
+  const container =
+    document.getElementById(
+      'studentList'
+    );
+
+
+  container.innerHTML = '';
+
+
+  if (
+    students.length === 0
+  ) {
+
+    container.innerHTML =
+
+      '<div class="card">' +
+      'Tiada data murid.' +
+      '</div>';
+
+    return;
+
+  }
+
+
+  students.forEach(
+    function(student) {
+
+      const qrUrl =
+        'https://quickchart.io/qr' +
+        '?text=' +
+        encodeURIComponent(
+          student.id
+        ) +
+        '&size=200';
+
+
+      const card =
+        document.createElement(
+          'div'
+        );
+
+
+      card.className =
+        'student-card';
+
+
+      card.innerHTML =
+
+        '<div class="student-card-name">' +
+        escapeHtml(
+          student.name
+        ) +
+        '</div>' +
+
+        '<div class="student-card-info">' +
+        'ID: ' +
+        escapeHtml(
+          student.id
+        ) +
+        '</div>' +
+
+        '<div class="student-card-info">' +
+        'Kelas: ' +
+        escapeHtml(
+          student.className
+        ) +
+        '</div>' +
+
+        '<img ' +
+        'class="student-qr" ' +
+        'src="' +
+        qrUrl +
+        '" ' +
+        'alt="QR Code">' +
+
+        '<div class="student-actions">' +
+
+        '<button ' +
+        'class="edit-button" ' +
+        'onclick="editStudent(\'' +
+        escapeJs(
+          student.id
+        ) +
+        '\')">' +
+        '✏️ Edit' +
+        '</button>' +
+
+        '<button ' +
+        'class="delete-button" ' +
+        'onclick="removeStudent(\'' +
+        escapeJs(
+          student.id
+        ) +
+        '\')">' +
+        '🗑️ Padam' +
+        '</button>' +
+
+        '</div>';
+
+
+      container.appendChild(
+        card
+      );
+
+    }
+  );
+
+}
+
+
+/**
+ * Add student.
+ */
+function addNewStudent() {
+
+  const id =
+    document
+      .getElementById(
+        'studentIdInput'
+      )
+      .value
+      .trim();
+
+
+  const name =
+    document
+      .getElementById(
+        'studentNameInput'
+      )
+      .value
+      .trim();
+
+
+  const className =
+    document
+      .getElementById(
+        'studentClassInput'
+      )
+      .value
+      .trim();
+
+
+  if (
+    !id ||
+    !name ||
+    !className
+  ) {
+
+    alert(
+      'Sila lengkapkan semua maklumat murid.'
+    );
+
+    return;
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(result) {
+
+        alert(
+          result.message
+        );
+
+
+        document
+          .getElementById(
+            'studentIdInput'
+          )
+          .value = '';
+
+
+        document
+          .getElementById(
+            'studentNameInput'
+          )
+          .value = '';
+
+
+        document
+          .getElementById(
+            'studentClassInput'
+          )
+          .value = '';
+
+
+        loadStudents();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        alert(
+          error.message
+        );
+
+      }
+    )
+
+    .addStudent(
+      id,
+      name,
+      className
+    );
+
+}
+
+
+/**
+ * Search students.
+ */
+function filterStudents() {
+
+  const query =
+    document
+      .getElementById(
+        'studentSearch'
+      )
+      .value
+      .trim()
+      .toLowerCase();
+
+
+  if (!query) {
+
+    displayStudents(
+      allStudents
+    );
+
+    return;
+
+  }
+
+
+  const filtered =
+    allStudents.filter(
+      function(student) {
+
+        return (
+
+          student.id
+            .toLowerCase()
+            .includes(query)
+
+          ||
+
+          student.name
+            .toLowerCase()
+            .includes(query)
+
+          ||
+
+          student.className
+            .toLowerCase()
+            .includes(query)
+
+        );
+
+      }
+    );
+
+
+  displayStudents(
+    filtered
+  );
+
+}
+
+
+/**
+ * Delete student.
+ */
+function removeStudent(
+  studentId
+) {
+
+  const confirmed =
+    confirm(
+      'Padam murid ' +
+      studentId +
+      '?'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(result) {
+
+        alert(
+          result.message
+        );
+
+        loadStudents();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        alert(
+          error.message
+        );
+
+      }
+    )
+
+    .deleteStudent(
+      studentId
+    );
+
+}
+
+
+/**
+ * Edit student.
+ *
+ * Temporary simple version.
+ * We will replace this with a proper
+ * edit form in the next refinement.
+ */
+function editStudent(
+  studentId
+) {
+
+  const student =
+    allStudents.find(
+      function(item) {
+
+        return (
+          item.id ===
+          studentId
+        );
+
+      }
+    );
+
+
+  if (!student) {
+    return;
+  }
+
+
+  const name =
+    prompt(
+      'Nama Murid:',
+      student.name
+    );
+
+
+  if (
+    name === null
+  ) {
+    return;
+  }
+
+
+  const className =
+    prompt(
+      'Kelas:',
+      student.className
+    );
+
+
+  if (
+    className === null
+  ) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(result) {
+
+        alert(
+          result.message
+        );
+
+        loadStudents();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        alert(
+          error.message
+        );
+
+      }
+    )
+
+    .updateStudent(
+      studentId,
+      name,
+      className
+    );
+
+}
+
+
+/**
+ * Escape HTML.
+ */
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+    .replace(
+      /</g,
+      '&lt;'
+    )
+    .replace(
+      />/g,
+      '&gt;'
+    )
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+    .replace(
+      /'/g,
+      '&#039;'
+    );
+
+}
+
+
+/**
+ * Escape JavaScript string.
+ */
+function escapeJs(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+    .replace(
+      /\\/g,
+      '\\\\'
+    )
+    .replace(
+      /'/g,
+      "\\'"
+    );
+
+}
 
 /* ==================================================
    SEND QR TO SATS BACKEND
@@ -478,3 +1117,8 @@ function escapeHtml(
 </body>
 
 </html>
+loadSettings();
+
+loadStudents();
+
+startScanner();
