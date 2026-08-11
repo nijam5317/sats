@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>SATS - QR Scanner</title>
+
+  <script
+    src="https://unpkg.com/html5-qrcode"
+  ></script>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .header p {
+      color: #6b7280;
+    }
+
+    .card {
+      background: white;
+      padding: 18px;
+      border-radius: 20px;
+      box-shadow:
+        0 5px 25px rgba(0,0,0,0.08);
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 15px;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 15px;
+      color: #6b7280;
+    }
+
+    .result {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 12px;
+      background: #dcfce7;
+      color: #166534;
+      text-align: center;
+      font-weight: bold;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+
+    <h1>🏫 SATS</h1>
+
+    <p>
+      Sistem Kehadiran Murid
+    </p>
+
+  </div>
+
+
+  <div class="card">
+
+    <div id="reader"></div>
+
+    <div
+      id="scannerStatus"
+      class="status"
+    >
+      Memulakan kamera...
+    </div>
+
+
+    <div
+      id="result"
+      class="result"
+    ></div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  let scanner;
+
+
+  function startScanner() {
+
+    scanner =
+      new Html5Qrcode("reader");
+
+
+    scanner.start(
+
+      {
+        facingMode: "environment"
+      },
+
+      {
+        fps: 10,
+
+        qrbox: {
+          width: 250,
+          height: 250
+        }
+      },
+
+
+      function(decodedText) {
+
+        document
+          .getElementById(
+            "result"
+          )
+          .style.display = "block";
+
+
+        document
+          .getElementById(
+            "result"
+          )
+          .innerText =
+          "QR DIKESAN: " +
+          decodedText;
+
+
+        document
+          .getElementById(
+            "scannerStatus"
+          )
+          .innerText =
+          "QR berjaya dibaca.";
+
+      },
+
+
+      function(errorMessage) {
+
+        // Normal scanning errors
+        // are ignored.
+
+      }
+
+    )
+
+    .then(function() {
+
+      document
+        .getElementById(
+          "scannerStatus"
+        )
+        .innerText =
+        "Kamera sedia. Sila imbas QR.";
+
+    })
+
+    .catch(function(error) {
+
+      console.error(error);
+
+
+      document
+        .getElementById(
+          "scannerStatus"
+        )
+        .innerText =
+        "Kamera tidak dapat dibuka.";
+
+    });
+
+  }
+
+
+  startScanner();
+
+</script>
+
+</body>
+
+</html>
