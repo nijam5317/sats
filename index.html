@@ -149,32 +149,11 @@
       },
 
 
-      function(decodedText) {
+     function(decodedText) {
 
-        document
-          .getElementById(
-            "result"
-          )
-          .style.display = "block";
+  sendQRToSATS(decodedText);
 
-
-        document
-          .getElementById(
-            "result"
-          )
-          .innerText =
-          "QR DIKESAN: " +
-          decodedText;
-
-
-        document
-          .getElementById(
-            "scannerStatus"
-          )
-          .innerText =
-          "QR berjaya dibaca.";
-
-      },
+},
 
 
       function(errorMessage) {
@@ -213,7 +192,285 @@
 
   }
 
+/* ==================================================
+   SEND QR TO SATS BACKEND
+   ================================================== */
 
+function sendQRToSATS(qrCode) {
+
+  const result =
+    document.getElementById(
+      "result"
+    );
+
+
+  const status =
+    document.getElementById(
+      "scannerStatus"
+    );
+
+
+  result.style.display =
+    "block";
+
+
+  result.innerText =
+    "Menyemak murid...";
+
+
+  status.innerText =
+    "Menghubungi SATS...";
+
+
+  /*
+   * Create a unique JSONP callback.
+   */
+
+  const callbackName =
+    "satsCallback_" +
+    Date.now();
+
+
+  window[callbackName] =
+    function(data) {
+
+      try {
+
+        displayAttendanceResult(
+          data
+        );
+
+      } finally {
+
+        delete window[
+          callbackName
+        ];
+
+      }
+
+    };
+
+
+  const script =
+    document.createElement(
+      "script"
+    );
+
+
+  /*
+   * IMPORTANT:
+   * Replace this URL with your
+   * Apps Script Web App URL.
+   */
+
+  const API_URL =
+    "https://script.google.com/a/macros/moe-dl.edu.my/s/AKfycbxmq-vR8ITXiLjgZn3Gyezmr2vbC5iIghWrY-MpRR4j2Q6LA0K1BOJb3hXXVswG6ZFe/exec";
+
+
+  script.src =
+    API_URL +
+    "?action=scan" +
+    "&qr=" +
+    encodeURIComponent(
+      qrCode
+    ) +
+    "&callback=" +
+    callbackName;
+
+
+  script.onerror =
+    function() {
+
+      result.innerText =
+        "Ralat sambungan SATS.";
+
+
+      status.innerText =
+        "Tidak dapat menghubungi server.";
+
+      delete window[
+        callbackName
+      ];
+
+    };
+
+
+  document
+    .body
+    .appendChild(
+      script
+    );
+
+}
+
+
+/* ==================================================
+   DISPLAY SATS RESULT
+   ================================================== */
+
+function displayAttendanceResult(
+  data
+) {
+
+  const result =
+    document.getElementById(
+      "result"
+    );
+
+
+  const status =
+    document.getElementById(
+      "scannerStatus"
+    );
+
+
+  if (
+    data.success
+  ) {
+
+    result.innerHTML =
+
+      "✓ HADIR<br><br>" +
+
+      "<strong>" +
+      escapeHtml(
+        data.student.name
+      ) +
+      "</strong><br>" +
+
+      "ID: " +
+      escapeHtml(
+        data.student.id
+      ) +
+      "<br>" +
+
+      "Kelas " +
+      escapeHtml(
+        data.student.className
+      ) +
+      "<br><br>" +
+
+      data.date +
+      " • " +
+      data.time;
+
+
+    status.innerText =
+      "Kehadiran berjaya direkodkan.";
+
+    return;
+
+  }
+
+
+  if (
+    data.type ===
+    "duplicate"
+  ) {
+
+    result.innerHTML =
+
+      "⚠ SUDAH DIREKOD<br><br>" +
+
+      "<strong>" +
+      escapeHtml(
+        data.student.name
+      ) +
+      "</strong><br>" +
+
+      "ID: " +
+      escapeHtml(
+        data.student.id
+      ) +
+      "<br>" +
+
+      "Kelas " +
+      escapeHtml(
+        data.student.className
+      ) +
+      "<br><br>" +
+
+      "Scan pertama: " +
+      escapeHtml(
+        data.existingTime
+      );
+
+
+    status.innerText =
+      "Murid ini sudah mempunyai rekod hari ini.";
+
+    return;
+
+  }
+
+
+  if (
+    data.type ===
+    "not_found"
+  ) {
+
+    result.innerHTML =
+
+      "✕ MURID TIDAK DIJUMPAI<br><br>" +
+
+      "QR: " +
+      escapeHtml(
+        data.qrCode
+      );
+
+
+    status.innerText =
+      "QR Code tidak terdapat dalam Data Murid.";
+
+    return;
+
+  }
+
+
+  result.innerText =
+    data.message ||
+    "Ralat SATS.";
+
+
+  status.innerText =
+    "Ralat berlaku.";
+
+}
+
+
+/* ==================================================
+   BASIC HTML ESCAPE
+   ================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
   startScanner();
 
 </script>
