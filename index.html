@@ -3153,7 +3153,7 @@ function uploadSchoolLogo() {
 
     img.onload = function() {
 
-      const maxSize = 500;
+      const maxSize = 180;
 
       let width =
         img.naturalWidth || img.width;
@@ -3223,7 +3223,7 @@ function uploadSchoolLogo() {
       const dataUrl =
         canvas.toDataURL(
           "image/jpeg",
-          0.72
+          0.45
         );
 
       /*
@@ -3231,7 +3231,7 @@ function uploadSchoolLogo() {
        * Reject unusually large images rather than
        * saving a value that may fail.
        */
-      if (dataUrl.length > 45000) {
+      if (dataUrl.length > 7000) {
 
         alert(
           "Logo masih terlalu besar. " +
@@ -3284,16 +3284,17 @@ function uploadSchoolLogo() {
           data.schoolLogo ||
           dataUrl;
 
+        const savedLogo =
+          data.schoolLogo ||
+          dataUrl;
+
         updateSchoolBrand(
           document.getElementById(
             "schoolNameSetting"
           ).value ||
           "SATS",
-          data.schoolLogo ||
-          dataUrl
+          savedLogo
         );
-
-        loadSchoolSettings();
 
         alert(
           "Logo sekolah berjaya disimpan."
