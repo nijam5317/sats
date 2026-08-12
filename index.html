@@ -495,6 +495,79 @@
     }
 
 
+
+    .student-toolbar {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .student-toolbar .form-input {
+      margin-top: 10px;
+    }
+
+    .print-button {
+      width: 100%;
+      border: none;
+      border-radius: 11px;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #111827;
+      color: white;
+    }
+
+    .print-button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .print-selection {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+
+      #printArea,
+      #printArea * {
+        visibility: visible !important;
+      }
+
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .print-student-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px;
+        text-align: center;
+        min-height: 230px;
+      }
+
+      .print-student-card img {
+        width: 150px;
+        height: 150px;
+        object-fit: contain;
+      }
+    }
+
     /* =========================================
        STUDENT LIST
        ========================================= */
@@ -668,6 +741,9 @@
 
 
 <body>
+
+<!-- SATS frontend: class dropdown + class filter + bulk QR printing -->
+
 
 
 <!-- =================================================
@@ -962,11 +1038,12 @@
     >
 
 
-    <input
+    <select
       id="studentClassInput"
       class="form-input"
-      placeholder="Kelas"
     >
+      <option value="">Pilih Kelas</option>
+    </select>
 
 
     <button
@@ -988,15 +1065,47 @@
     </h3>
 
 
-    <input
-      id="studentSearch"
-      class="form-input"
-      placeholder="Cari ID, nama atau kelas..."
-      oninput="filterStudents()"
+    <div class="student-toolbar">
+
+      <div>
+        <input
+          id="studentSearch"
+          class="form-input"
+          placeholder="Cari ID atau nama..."
+          oninput="filterStudents()"
+        >
+      </div>
+
+      <div>
+        <select
+          id="studentClassFilter"
+          class="form-input"
+          onchange="filterStudents()"
+        >
+          <option value="">Semua Kelas</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="print-selection" id="printSelectionText">
+      Pilih kelas atau cari murid, kemudian cetak.
+    </div>
+
+    <button
+      id="bulkPrintButton"
+      class="print-button"
+      onclick="printFilteredStudents()"
+      disabled
     >
+      🖨️ CETAK QR MURID
+    </button>
 
   </div>
 
+
+  <!-- PRINT AREA -->
+  <div id="printArea" style="display:none;"></div>
 
   <!-- STUDENT LIST -->
 
@@ -1062,6 +1171,7 @@ let scannerRunning = false;
 let processingScan = false;
 
 let allStudents = [];
+let allClasses = [];
 
 
 /* =================================================
@@ -1155,6 +1265,7 @@ function showPage(pageName) {
 
     stopScanner();
 
+    loadClasses();
     loadStudents();
 
   }
@@ -1258,6 +1369,70 @@ function callSATS(
     script
   );
 
+}
+
+
+/* =================================================
+   LOAD CLASSES
+   ================================================= */
+
+function loadClasses() {
+
+  const addSelect = document.getElementById("studentClassInput");
+  const filterSelect = document.getElementById("studentClassFilter");
+
+  if (!addSelect || !filterSelect) return;
+
+  const url = SATS_API + "?action=getClasses";
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      console.warn("Kelas tidak dapat dimuat:", data && data.message);
+      return;
+    }
+
+    // Support the common backend response names.
+    allClasses =
+      data.classes ||
+      data.classList ||
+      data.classNames ||
+      [];
+
+    allClasses = allClasses
+      .map(function(item) {
+        if (typeof item === "string") return item.trim();
+        if (item && item.className) return String(item.className).trim();
+        return "";
+      })
+      .filter(Boolean);
+
+    allClasses = Array.from(new Set(allClasses))
+      .sort(function(a, b) {
+        return a.localeCompare(b, undefined, {numeric: true});
+      });
+
+    addSelect.innerHTML =
+      '<option value="">Pilih Kelas</option>' +
+      allClasses.map(function(className) {
+        return '<option value="' +
+          escapeAttribute(className) +
+          '">' +
+          escapeHtml(className) +
+          '</option>';
+      }).join("");
+
+    filterSelect.innerHTML =
+      '<option value="">Semua Kelas</option>' +
+      allClasses.map(function(className) {
+        return '<option value="' +
+          escapeAttribute(className) +
+          '">' +
+          escapeHtml(className) +
+          '</option>';
+      }).join("");
+
+  });
 }
 
 
@@ -1449,14 +1624,75 @@ function loadStudents() {
         data.students ||
         [];
 
+      // Keep class dropdowns synchronized with actual student data too.
+      const classesFromStudents =
+        allStudents
+          .map(function(student) {
+            return String(student.className || "").trim();
+          })
+          .filter(Boolean);
+
+      allClasses =
+        Array.from(new Set(
+          allClasses.concat(classesFromStudents)
+        )).sort(function(a, b) {
+          return a.localeCompare(b, undefined, {numeric: true});
+        });
+
+      populateClassDropdowns();
 
       renderStudents(
         allStudents
       );
 
+      updatePrintButton(allStudents.length);
+
     }
   );
 
+}
+
+
+function populateClassDropdowns() {
+
+  const addSelect = document.getElementById("studentClassInput");
+  const filterSelect = document.getElementById("studentClassFilter");
+
+  if (addSelect) {
+    const current = addSelect.value;
+
+    addSelect.innerHTML =
+      '<option value="">Pilih Kelas</option>' +
+      allClasses.map(function(className) {
+        return '<option value="' +
+          escapeAttribute(className) +
+          '">' +
+          escapeHtml(className) +
+          '</option>';
+      }).join("");
+
+    if (allClasses.includes(current)) {
+      addSelect.value = current;
+    }
+  }
+
+  if (filterSelect) {
+    const current = filterSelect.value;
+
+    filterSelect.innerHTML =
+      '<option value="">Semua Kelas</option>' +
+      allClasses.map(function(className) {
+        return '<option value="' +
+          escapeAttribute(className) +
+          '">' +
+          escapeHtml(className) +
+          '</option>';
+      }).join("");
+
+    if (allClasses.includes(current)) {
+      filterSelect.value = current;
+    }
+  }
 }
 
 
@@ -1579,67 +1815,141 @@ function renderStudents(
 
 function filterStudents() {
 
-
   const search =
     document
-      .getElementById(
-        "studentSearch"
-      )
+      .getElementById("studentSearch")
       .value
       .trim()
       .toLowerCase();
 
-
-  if (!search) {
-
-    renderStudents(
-      allStudents
-    );
-
-    return;
-
-  }
-
+  const selectedClass =
+    document
+      .getElementById("studentClassFilter")
+      .value
+      .trim()
+      .toLowerCase();
 
   const filtered =
-    allStudents.filter(
-      function(student) {
+    allStudents.filter(function(student) {
 
-        return (
+      const id =
+        String(student.id || "").toLowerCase();
 
-          String(
-            student.id
-          )
-          .toLowerCase()
-          .includes(search)
+      const name =
+        String(student.name || "").toLowerCase();
 
-          ||
+      const className =
+        String(student.className || "").toLowerCase();
 
-          String(
-            student.name
-          )
-          .toLowerCase()
-          .includes(search)
+      const matchesSearch =
+        !search ||
+        id.includes(search) ||
+        name.includes(search) ||
+        className.includes(search);
 
-          ||
+      const matchesClass =
+        !selectedClass ||
+        className === selectedClass;
 
-          String(
-            student.className
-          )
-          .toLowerCase()
-          .includes(search)
+      return matchesSearch && matchesClass;
+    });
 
-        );
-
-      }
-    );
-
-
-  renderStudents(
-    filtered
-  );
+  renderStudents(filtered);
+  updatePrintButton(filtered.length);
 
 }
+
+function updatePrintButton(count) {
+
+  const button = document.getElementById("bulkPrintButton");
+  const text = document.getElementById("printSelectionText");
+
+  if (!button || !text) return;
+
+  button.disabled = !count;
+
+  text.innerText =
+    count
+      ? count + " murid dipilih untuk cetakan."
+      : "Tiada murid untuk dicetak.";
+}
+
+function printFilteredStudents() {
+
+  const search =
+    document
+      .getElementById("studentSearch")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const selectedClass =
+    document
+      .getElementById("studentClassFilter")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const filtered =
+    allStudents.filter(function(student) {
+
+      const id =
+        String(student.id || "").toLowerCase();
+
+      const name =
+        String(student.name || "").toLowerCase();
+
+      const className =
+        String(student.className || "").toLowerCase();
+
+      return (
+        (!search ||
+          id.includes(search) ||
+          name.includes(search) ||
+          className.includes(search)) &&
+        (!selectedClass ||
+          className === selectedClass)
+      );
+    });
+
+  if (!filtered.length) {
+    alert("Tiada murid untuk dicetak.");
+    return;
+  }
+
+  const printArea =
+    document.getElementById("printArea");
+
+  printArea.innerHTML =
+    filtered.map(function(student) {
+
+      const qrUrl =
+        "https://quickchart.io/qr?text=" +
+        encodeURIComponent(student.id) +
+        "&size=300";
+
+      return (
+        '<div class="print-student-card">' +
+          "<strong>" +
+            escapeHtml(student.name || "") +
+          "</strong><br>" +
+          "<div>ID: " +
+            escapeHtml(student.id || "") +
+          "</div>" +
+          "<div>Kelas: " +
+            escapeHtml(student.className || "") +
+          "</div>" +
+          '<img src="' +
+            qrUrl +
+            '" alt="QR Code">' +
+        "</div>"
+      );
+
+    }).join("");
+
+  window.print();
+}
+
 
 
 /* =================================================
@@ -2510,6 +2820,7 @@ document.addEventListener(
   function() {
 
     loadDashboard();
+    loadClasses();
 
   }
 );
