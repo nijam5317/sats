@@ -736,7 +736,8 @@
     }
 
   
-    .settings-class-row {
+
+      .settings-class-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -755,7 +756,7 @@
       font-weight: 600;
     }
 
-  </style>
+</style>
 
 </head>
 
@@ -1131,6 +1132,22 @@
 
 
   
+<!-- PRINT AREA -->
+  <div id="printArea" style="display:none;"></div>
+
+  <!-- STUDENT LIST -->
+
+  <div id="studentList">
+
+    <div class="loading">
+      Memuatkan data murid...
+    </div>
+
+  </div>
+
+</section>
+
+
   <!-- SETTINGS PAGE -->
   <section id="settings" class="page">
 
@@ -1208,20 +1225,6 @@
 
   </section>
 
-<!-- PRINT AREA -->
-  <div id="printArea" style="display:none;"></div>
-
-  <!-- STUDENT LIST -->
-
-  <div id="studentList">
-
-    <div class="loading">
-      Memuatkan data murid...
-    </div>
-
-  </div>
-
-</section>
 
 
 <!-- =================================================
@@ -3046,10 +3049,7 @@ function saveSchoolNameSetting() {
       return;
     }
 
-    updateSchoolBrand(
-      schoolName,
-      ""
-    );
+    loadSchoolSettings();
 
     loadSchoolSettings();
 
