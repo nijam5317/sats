@@ -2,18 +2,15 @@
 <html lang="ms">
 
 <head>
+
   <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-  <title>SATS - QR Scanner</title>
+  <title>SATS - Sistem Kehadiran Murid</title>
 
-  <script
-    src="https://unpkg.com/html5-qrcode"
-  ></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
 
@@ -23,39 +20,141 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       background: #f4f7fb;
       color: #1f2937;
     }
 
-    .container {
-      width: 100%;
-      max-width: 520px;
+    /* =========================
+       HEADER
+       ========================= */
+
+    .topbar {
+      background: white;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .school-logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      display: none;
+    }
+
+    .school-name {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .system-name {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 3px;
+    }
+
+    /* =========================
+       NAVIGATION
+       ========================= */
+
+    .nav {
+      background: white;
+      display: flex;
+      overflow-x: auto;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav button {
+      border: none;
+      background: transparent;
+      padding: 14px 18px;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      color: #6b7280;
+    }
+
+    .nav button.active {
+      color: #111827;
+      font-weight: bold;
+      border-bottom: 3px solid #111827;
+    }
+
+    /* =========================
+       PAGES
+       ========================= */
+
+    .page {
+      display: none;
+      max-width: 850px;
       margin: auto;
       padding: 20px;
     }
 
-    .header {
-      text-align: center;
+    .page.active {
+      display: block;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .page-subtitle {
+      color: #6b7280;
       margin-bottom: 20px;
     }
 
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    .header p {
-      color: #6b7280;
-    }
+    /* =========================
+       CARDS
+       ========================= */
 
     .card {
       background: white;
+      border-radius: 18px;
       padding: 18px;
-      border-radius: 20px;
-      box-shadow:
-        0 5px 25px rgba(0,0,0,0.08);
+      margin-bottom: 18px;
+      box-shadow: 0 5px 20px rgba(0,0,0,.06);
     }
+
+    /* =========================
+       DASHBOARD
+       ========================= */
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 5px 20px rgba(0,0,0,.05);
+    }
+
+    .stat-label {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .stat-number {
+      font-size: 30px;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+
+    /* =========================
+       SCANNER
+       ========================= */
 
     #reader {
       width: 100%;
@@ -63,7 +162,7 @@
       border-radius: 15px;
     }
 
-    .status {
+    .scanner-status {
       text-align: center;
       margin-top: 15px;
       color: #6b7280;
@@ -71,136 +170,176 @@
 
     .result {
       display: none;
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 12px;
-      background: #dcfce7;
-      color: #166534;
+      margin-top: 18px;
       text-align: center;
+    }
+
+    .profile {
+      width: 125px;
+      height: 125px;
+      object-fit: cover;
+      border-radius: 50%;
+      display: none;
+      margin: 0 auto 15px;
+    }
+
+    .student-name {
+      font-size: 24px;
       font-weight: bold;
     }
-/* =========================
-   DATA MURID
-   ========================= */
 
-.form-input {
+    .student-class {
+      margin-top: 5px;
+      color: #6b7280;
+      font-size: 17px;
+    }
 
-  width: 100%;
+    .student-id {
+      margin-top: 4px;
+      color: #6b7280;
+    }
 
-  padding: 13px;
+    .status {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 19px;
+      font-weight: bold;
+    }
 
-  border: 1px solid #d1d5db;
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
 
-  border-radius: 10px;
+    .warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
 
-  margin-top: 10px;
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
 
-  font-size: 16px;
+    .datetime {
+      margin-top: 12px;
+      color: #6b7280;
+    }
 
-  outline: none;
+    /* =========================
+       FORM
+       ========================= */
 
-}
+    .form-input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+      outline: none;
+    }
 
+    .form-input:focus {
+      border-color: #111827;
+    }
 
-.form-input:focus {
+    /* =========================
+       BUTTONS
+       ========================= */
 
-  border-color: #111827;
+    .button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
 
-}
+    .button-dark {
+      background: #111827;
+      color: white;
+    }
 
+    .button-light {
+      background: #e5e7eb;
+      color: #111827;
+    }
 
-.student-card {
+    /* =========================
+       STUDENT LIST
+       ========================= */
 
-  background: white;
+    .student-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.06);
+    }
 
-  border-radius: 16px;
+    .student-card-name {
+      font-size: 19px;
+      font-weight: bold;
+    }
 
-  padding: 16px;
+    .student-card-info {
+      margin-top: 5px;
+      color: #6b7280;
+      font-size: 14px;
+    }
 
-  margin-bottom: 12px;
+    .student-qr {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      margin-top: 12px;
+    }
 
-  box-shadow:
-    0 4px 15px
-    rgba(0,0,0,0.06);
+    .student-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
 
-}
+    .student-actions button {
+      flex: 1;
+      border: none;
+      border-radius: 9px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
+    .edit-button {
+      background: #e5e7eb;
+    }
 
-.student-card-name {
+    .delete-button {
+      background: #fee2e2;
+      color: #991b1b;
+    }
 
-  font-size: 19px;
+    /* =========================
+       MOBILE
+       ========================= */
 
-  font-weight: bold;
+    @media (max-width: 600px) {
 
-}
+      .page {
+        padding: 14px;
+      }
 
+      .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+      }
 
-.student-card-info {
+    }
 
-  margin-top: 5px;
-
-  color: #6b7280;
-
-  font-size: 14px;
-
-}
-
-
-.student-qr {
-
-  width: 120px;
-
-  height: 120px;
-
-  object-fit: contain;
-
-  margin-top: 12px;
-
-}
-
-
-.student-actions {
-
-  display: flex;
-
-  gap: 8px;
-
-  margin-top: 12px;
-
-}
-
-
-.student-actions button {
-
-  flex: 1;
-
-  border: none;
-
-  border-radius: 9px;
-
-  padding: 10px;
-
-  cursor: pointer;
-
-  font-weight: bold;
-
-}
-
-
-.edit-button {
-
-  background: #e5e7eb;
-
-}
-
-
-.delete-button {
-
-  background: #fee2e2;
-
-  color: #991b1b;
-
-}
   </style>
 
 </head>
@@ -208,16 +347,153 @@
 
 <body>
 
-<div class="container">
 
-  <div class="header">
+<!-- ==================================================
+     HEADER
+     ================================================== -->
 
-    <h1>🏫 SATS</h1>
+<div class="topbar">
 
-    <p>
+  <img id="schoolLogo"
+       class="school-logo"
+       alt="Logo Sekolah">
+
+  <div>
+
+    <div id="schoolName"
+         class="school-name">
+      SATS
+    </div>
+
+    <div class="system-name">
       Sistem Kehadiran Murid
-    </p>
+    </div>
 
+  </div>
+
+</div>
+
+
+<!-- ==================================================
+     NAVIGATION
+     ================================================== -->
+
+<div class="nav">
+
+  <button id="navDashboard"
+          class="active"
+          onclick="showPage('dashboard')">
+    🏠 Utama
+  </button>
+
+  <button id="navScanner"
+          onclick="showPage('scanner')">
+    📷 Scan
+  </button>
+
+  <button id="navStudents"
+          onclick="showPage('students')">
+    👨‍🎓 Data Murid
+  </button>
+
+  <button id="navReports"
+          onclick="showPage('reports')">
+    📊 Laporan
+  </button>
+
+</div>
+
+
+<!-- ==================================================
+     DASHBOARD
+     ================================================== -->
+
+<section id="dashboard"
+         class="page active">
+
+  <div class="page-title">
+    Dashboard
+  </div>
+
+  <div class="page-subtitle">
+    Ringkasan sistem SATS
+  </div>
+
+  <div class="dashboard-grid">
+
+    <div class="stat">
+
+      <div class="stat-label">
+        Jumlah Murid
+      </div>
+
+      <div id="totalStudents"
+           class="stat-number">
+        -
+      </div>
+
+    </div>
+
+
+    <div class="stat">
+
+      <div class="stat-label">
+        Hadir
+      </div>
+
+      <div id="totalPresent"
+           class="stat-number">
+        -
+      </div>
+
+    </div>
+
+
+    <div class="stat">
+
+      <div class="stat-label">
+        Tidak Hadir
+      </div>
+
+      <div id="totalAbsent"
+           class="stat-number">
+        -
+      </div>
+
+    </div>
+
+
+    <div class="stat">
+
+      <div class="stat-label">
+        Kehadiran
+      </div>
+
+      <div id="attendancePercent"
+           class="stat-number">
+        -
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ==================================================
+     SCANNER
+     ================================================== -->
+
+<section id="scanner"
+         class="page">
+
+  <div class="page-title">
+    Scan Kehadiran
+  </div>
+
+  <div class="page-subtitle">
+    Imbas QR Code murid
   </div>
 
 
@@ -225,645 +501,365 @@
 
     <div id="reader"></div>
 
-    <div
-      id="scannerStatus"
-      class="status"
-    >
-      Memulakan kamera...
+    <div id="scannerStatus"
+         class="scanner-status">
+      Sedia untuk mengimbas...
     </div>
 
 
-    <div
-      id="result"
-      class="result"
-    ></div>
+    <div id="result"
+         class="result">
+
+      <img id="profile"
+           class="profile"
+           alt="Profile Murid">
+
+      <div id="studentName"
+           class="student-name">
+      </div>
+
+      <div id="studentClass"
+           class="student-class">
+      </div>
+
+      <div id="studentId"
+           class="student-id">
+      </div>
+
+      <div id="status"
+           class="status">
+      </div>
+
+      <div id="datetime"
+           class="datetime">
+      </div>
+
+      <button class="button button-dark"
+              onclick="restartScanner()">
+        📷 Scan Murid Seterusnya
+      </button>
+
+    </div>
 
   </div>
 
-</div>
+</section>
+
+
+<!-- ==================================================
+     DATA MURID
+     ================================================== -->
+
+<section id="students"
+         class="page">
+
+  <div class="page-title">
+    Data Murid
+  </div>
+
+  <div class="page-subtitle">
+    Pengurusan maklumat murid
+  </div>
+
+
+  <div class="card">
+
+    <h3>
+      ➕ Tambah Murid
+    </h3>
+
+    <input id="studentIdInput"
+           class="form-input"
+           placeholder="ID Murid">
+
+    <input id="studentNameInput"
+           class="form-input"
+           placeholder="Nama Murid">
+
+    <input id="studentClassInput"
+           class="form-input"
+           placeholder="Kelas">
+
+    <button class="button button-dark"
+            onclick="addNewStudent()">
+      SIMPAN MURID
+    </button>
+
+  </div>
+
+
+  <div class="card">
+
+    <h3>
+      🔎 Cari Murid
+    </h3>
+
+    <input id="studentSearch"
+           class="form-input"
+           placeholder="Cari ID, nama atau kelas..."
+           oninput="filterStudents()">
+
+  </div>
+
+
+  <div id="studentList"></div>
+
+</section>
+
+
+<!-- ==================================================
+     REPORTS
+     ================================================== -->
+
+<section id="reports"
+         class="page">
+
+  <div class="page-title">
+    Laporan Kehadiran
+  </div>
+
+  <div class="page-subtitle">
+    Laporan berdasarkan julat tarikh
+  </div>
+
+  <div class="card">
+
+    Modul laporan akan dibina
+    selepas sistem asas stabil.
+
+  </div>
+
+</section>
 
 
 <script>
 
-  let scanner;
-
-
-  function startScanner() {
-
-    scanner =
-      new Html5Qrcode("reader");
-
-
-    scanner.start(
-
-      {
-        facingMode: "environment"
-      },
-
-      {
-        fps: 10,
-
-        qrbox: {
-          width: 250,
-          height: 250
-        }
-      },
-
-
-     function(decodedText) {
-
-  sendQRToSATS(decodedText);
-
-},
-
-
-      function(errorMessage) {
-
-        // Normal scanning errors
-        // are ignored.
-
-      }
-
-    )
-
-    .then(function() {
-
-      document
-        .getElementById(
-          "scannerStatus"
-        )
-        .innerText =
-        "Kamera sedia. Sila imbas QR.";
-
-    })
-
-    .catch(function(error) {
-
-      console.error(error);
-
-
-      document
-        .getElementById(
-          "scannerStatus"
-        )
-        .innerText =
-        "Kamera tidak dapat dibuka.";
-
-    });
-
-  }
-  /* ==================================================
-   DATA MURID
+/* ==================================================
+   SATS CONFIGURATION
    ================================================== */
+
+const SATS_API =
+  "https://script.google.com/macros/s/AKfycbxmq-vR8ITXiLjgZn3Gyezmr2vbC5iIghWrY-MpRR4j2Q6LA0K1BOJb3hXXVswG6ZFe/exec";
+
+
+/* ==================================================
+   GLOBAL VARIABLES
+   ================================================== */
+
+let scanner = null;
+
+let processing = false;
 
 let allStudents = [];
 
 
-/**
- * Load students.
- */
-function loadStudents() {
+/* ==================================================
+   NAVIGATION
+   ================================================== */
 
-  google.script.run
+function showPage(pageName) {
 
-    .withSuccessHandler(
-      function(students) {
+  document
+    .querySelectorAll(".page")
+    .forEach(function(page) {
 
-        allStudents =
-          students || [];
+      page.classList.remove("active");
 
-        displayStudents(
-          allStudents
-        );
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        alert(
-          'Gagal memuatkan data murid: ' +
-          error.message
-        );
-
-      }
-    )
-
-    .getStudents();
-
-}
+    });
 
 
-/**
- * Display student list.
- */
-function displayStudents(
-  students
-) {
-
-  const container =
-    document.getElementById(
-      'studentList'
-    );
+  document
+    .getElementById(pageName)
+    .classList.add("active");
 
 
-  container.innerHTML = '';
+  document
+    .querySelectorAll(".nav button")
+    .forEach(function(button) {
+
+      button.classList.remove("active");
+
+    });
 
 
-  if (
-    students.length === 0
-  ) {
+  if (pageName === "dashboard") {
 
-    container.innerHTML =
-
-      '<div class="card">' +
-      'Tiada data murid.' +
-      '</div>';
-
-    return;
-
-  }
-
-
-  students.forEach(
-    function(student) {
-
-      const qrUrl =
-        'https://quickchart.io/qr' +
-        '?text=' +
-        encodeURIComponent(
-          student.id
-        ) +
-        '&size=200';
-
-
-      const card =
-        document.createElement(
-          'div'
-        );
-
-
-      card.className =
-        'student-card';
-
-
-      card.innerHTML =
-
-        '<div class="student-card-name">' +
-        escapeHtml(
-          student.name
-        ) +
-        '</div>' +
-
-        '<div class="student-card-info">' +
-        'ID: ' +
-        escapeHtml(
-          student.id
-        ) +
-        '</div>' +
-
-        '<div class="student-card-info">' +
-        'Kelas: ' +
-        escapeHtml(
-          student.className
-        ) +
-        '</div>' +
-
-        '<img ' +
-        'class="student-qr" ' +
-        'src="' +
-        qrUrl +
-        '" ' +
-        'alt="QR Code">' +
-
-        '<div class="student-actions">' +
-
-        '<button ' +
-        'class="edit-button" ' +
-        'onclick="editStudent(\'' +
-        escapeJs(
-          student.id
-        ) +
-        '\')">' +
-        '✏️ Edit' +
-        '</button>' +
-
-        '<button ' +
-        'class="delete-button" ' +
-        'onclick="removeStudent(\'' +
-        escapeJs(
-          student.id
-        ) +
-        '\')">' +
-        '🗑️ Padam' +
-        '</button>' +
-
-        '</div>';
-
-
-      container.appendChild(
-        card
-      );
-
-    }
-  );
-
-}
-
-
-/**
- * Add student.
- */
-function addNewStudent() {
-
-  const id =
     document
-      .getElementById(
-        'studentIdInput'
-      )
-      .value
-      .trim();
+      .getElementById("navDashboard")
+      .classList.add("active");
+
+    stopScanner();
+
+  }
 
 
-  const name =
+  if (pageName === "scanner") {
+
     document
-      .getElementById(
-        'studentNameInput'
-      )
-      .value
-      .trim();
+      .getElementById("navScanner")
+      .classList.add("active");
+
+    startScanner();
+
+  }
 
 
-  const className =
+  if (pageName === "students") {
+
     document
-      .getElementById(
-        'studentClassInput'
-      )
-      .value
-      .trim();
+      .getElementById("navStudents")
+      .classList.add("active");
 
+    stopScanner();
 
-  if (
-    !id ||
-    !name ||
-    !className
-  ) {
-
-    alert(
-      'Sila lengkapkan semua maklumat murid.'
-    );
-
-    return;
+    loadStudents();
 
   }
 
 
-  google.script.run
+  if (pageName === "reports") {
 
-    .withSuccessHandler(
-      function(result) {
-
-        alert(
-          result.message
-        );
-
-
-        document
-          .getElementById(
-            'studentIdInput'
-          )
-          .value = '';
-
-
-        document
-          .getElementById(
-            'studentNameInput'
-          )
-          .value = '';
-
-
-        document
-          .getElementById(
-            'studentClassInput'
-          )
-          .value = '';
-
-
-        loadStudents();
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        alert(
-          error.message
-        );
-
-      }
-    )
-
-    .addStudent(
-      id,
-      name,
-      className
-    );
-
-}
-
-
-/**
- * Search students.
- */
-function filterStudents() {
-
-  const query =
     document
-      .getElementById(
-        'studentSearch'
-      )
-      .value
-      .trim()
-      .toLowerCase();
+      .getElementById("navReports")
+      .classList.add("active");
 
-
-  if (!query) {
-
-    displayStudents(
-      allStudents
-    );
-
-    return;
+    stopScanner();
 
   }
 
-
-  const filtered =
-    allStudents.filter(
-      function(student) {
-
-        return (
-
-          student.id
-            .toLowerCase()
-            .includes(query)
-
-          ||
-
-          student.name
-            .toLowerCase()
-            .includes(query)
-
-          ||
-
-          student.className
-            .toLowerCase()
-            .includes(query)
-
-        );
-
-      }
-    );
-
-
-  displayStudents(
-    filtered
-  );
-
 }
 
-
-/**
- * Delete student.
- */
-function removeStudent(
-  studentId
-) {
-
-  const confirmed =
-    confirm(
-      'Padam murid ' +
-      studentId +
-      '?'
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function(result) {
-
-        alert(
-          result.message
-        );
-
-        loadStudents();
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        alert(
-          error.message
-        );
-
-      }
-    )
-
-    .deleteStudent(
-      studentId
-    );
-
-}
-
-
-/**
- * Edit student.
- *
- * Temporary simple version.
- * We will replace this with a proper
- * edit form in the next refinement.
- */
-function editStudent(
-  studentId
-) {
-
-  const student =
-    allStudents.find(
-      function(item) {
-
-        return (
-          item.id ===
-          studentId
-        );
-
-      }
-    );
-
-
-  if (!student) {
-    return;
-  }
-
-
-  const name =
-    prompt(
-      'Nama Murid:',
-      student.name
-    );
-
-
-  if (
-    name === null
-  ) {
-    return;
-  }
-
-
-  const className =
-    prompt(
-      'Kelas:',
-      student.className
-    );
-
-
-  if (
-    className === null
-  ) {
-    return;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function(result) {
-
-        alert(
-          result.message
-        );
-
-        loadStudents();
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        alert(
-          error.message
-        );
-
-      }
-    )
-
-    .updateStudent(
-      studentId,
-      name,
-      className
-    );
-
-}
-
-
-/**
- * Escape HTML.
- */
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value || ''
-  )
-    .replace(
-      /&/g,
-      '&amp;'
-    )
-    .replace(
-      /</g,
-      '&lt;'
-    )
-    .replace(
-      />/g,
-      '&gt;'
-    )
-    .replace(
-      /"/g,
-      '&quot;'
-    )
-    .replace(
-      /'/g,
-      '&#039;'
-    );
-
-}
-
-
-/**
- * Escape JavaScript string.
- */
-function escapeJs(
-  value
-) {
-
-  return String(
-    value || ''
-  )
-    .replace(
-      /\\/g,
-      '\\\\'
-    )
-    .replace(
-      /'/g,
-      "\\'"
-    );
-
-}
 
 /* ==================================================
-   SEND QR TO SATS BACKEND
+   SCANNER
+   ================================================== */
+
+function startScanner() {
+
+  processing = false;
+
+
+  if (scanner) {
+
+    try {
+      scanner.clear();
+    } catch (error) {}
+
+  }
+
+
+  scanner =
+    new Html5Qrcode("reader");
+
+
+  scanner.start(
+
+    {
+      facingMode: "environment"
+    },
+
+    {
+      fps: 10,
+
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+
+    },
+
+    function(decodedText) {
+
+      if (processing) {
+        return;
+      }
+
+      processing = true;
+
+      try {
+        scanner.pause(true);
+      } catch (error) {}
+
+      sendQRToSATS(decodedText);
+
+    },
+
+    function(errorMessage) {
+
+      // Normal scanner errors ignored.
+
+    }
+
+  )
+
+  .then(function() {
+
+    document
+      .getElementById("scannerStatus")
+      .innerText =
+      "Kamera sedia. Sila imbas QR.";
+
+  })
+
+  .catch(function(error) {
+
+    console.error(error);
+
+    document
+      .getElementById("scannerStatus")
+      .innerText =
+      "Kamera tidak dapat dibuka. Sila benarkan akses kamera.";
+
+  });
+
+}
+
+
+/* ==================================================
+   STOP SCANNER
+   ================================================== */
+
+function stopScanner() {
+
+  if (!scanner) {
+    return;
+  }
+
+
+  try {
+    scanner.clear();
+  } catch (error) {}
+
+
+  scanner = null;
+
+}
+
+
+/* ==================================================
+   SEND QR TO APPS SCRIPT
    ================================================== */
 
 function sendQRToSATS(qrCode) {
 
   const result =
-    document.getElementById(
-      "result"
-    );
-
+    document.getElementById("result");
 
   const status =
-    document.getElementById(
-      "scannerStatus"
-    );
+    document.getElementById("scannerStatus");
 
 
-  result.style.display =
-    "block";
-
-
-  result.innerText =
-    "Menyemak murid...";
-
+  result.style.display = "block";
 
   status.innerText =
-    "Menghubungi SATS...";
+    "Menyemak data murid...";
 
 
-  /*
-   * Create a unique JSONP callback.
-   */
+  result.innerHTML =
+    "<div class='status warning'>" +
+    "⏳ Menyemak..." +
+    "</div>";
+
 
   const callbackName =
     "satsCallback_" +
@@ -875,15 +871,13 @@ function sendQRToSATS(qrCode) {
 
       try {
 
-        displayAttendanceResult(
-          data
-        );
+        displayAttendanceResult(data);
 
-      } finally {
+      }
 
-        delete window[
-          callbackName
-        ];
+      finally {
+
+        delete window[callbackName];
 
       }
 
@@ -891,28 +885,14 @@ function sendQRToSATS(qrCode) {
 
 
   const script =
-    document.createElement(
-      "script"
-    );
-
-
-  /*
-   * IMPORTANT:
-   * Replace this URL with your
-   * Apps Script Web App URL.
-   */
-
-  const API_URL =
-    "https://script.google.com/a/macros/moe-dl.edu.my/s/AKfycbxmq-vR8ITXiLjgZn3Gyezmr2vbC5iIghWrY-MpRR4j2Q6LA0K1BOJb3hXXVswG6ZFe/exec";
+    document.createElement("script");
 
 
   script.src =
-    API_URL +
+    SATS_API +
     "?action=scan" +
     "&qr=" +
-    encodeURIComponent(
-      qrCode
-    ) +
+    encodeURIComponent(qrCode) +
     "&callback=" +
     callbackName;
 
@@ -920,75 +900,53 @@ function sendQRToSATS(qrCode) {
   script.onerror =
     function() {
 
-      result.innerText =
-        "Ralat sambungan SATS.";
-
+      result.innerHTML =
+        "<div class='status error'>" +
+        "✕ Ralat sambungan SATS" +
+        "</div>";
 
       status.innerText =
-        "Tidak dapat menghubungi server.";
+        "Tidak dapat menghubungi server SATS.";
 
-      delete window[
-        callbackName
-      ];
+      processing = false;
+
+      delete window[callbackName];
 
     };
 
 
-  document
-    .body
-    .appendChild(
-      script
-    );
+  document.body.appendChild(script);
 
 }
 
 
 /* ==================================================
-   DISPLAY SATS RESULT
+   DISPLAY ATTENDANCE RESULT
    ================================================== */
 
-function displayAttendanceResult(
-  data
-) {
+function displayAttendanceResult(data) {
 
   const result =
-    document.getElementById(
-      "result"
-    );
-
+    document.getElementById("result");
 
   const status =
-    document.getElementById(
-      "scannerStatus"
+    document.getElementById("scannerStatus");
+
+
+  if (data.success) {
+
+    showStudent(data.student);
+
+
+    setStatus(
+      "✓ HADIR",
+      "success"
     );
 
 
-  if (
-    data.success
-  ) {
-
-    result.innerHTML =
-
-      "✓ HADIR<br><br>" +
-
-      "<strong>" +
-      escapeHtml(
-        data.student.name
-      ) +
-      "</strong><br>" +
-
-      "ID: " +
-      escapeHtml(
-        data.student.id
-      ) +
-      "<br>" +
-
-      "Kelas " +
-      escapeHtml(
-        data.student.className
-      ) +
-      "<br><br>" +
-
+    document
+      .getElementById("datetime")
+      .innerText =
       data.date +
       " • " +
       data.time;
@@ -1002,37 +960,22 @@ function displayAttendanceResult(
   }
 
 
-  if (
-    data.type ===
-    "duplicate"
-  ) {
+  if (data.type === "duplicate") {
 
-    result.innerHTML =
+    showStudent(data.student);
 
-      "⚠ SUDAH DIREKOD<br><br>" +
 
-      "<strong>" +
-      escapeHtml(
-        data.student.name
-      ) +
-      "</strong><br>" +
+    setStatus(
+      "⚠ SUDAH DIREKOD",
+      "warning"
+    );
 
-      "ID: " +
-      escapeHtml(
-        data.student.id
-      ) +
-      "<br>" +
 
-      "Kelas " +
-      escapeHtml(
-        data.student.className
-      ) +
-      "<br><br>" +
-
+    document
+      .getElementById("datetime")
+      .innerText =
       "Scan pertama: " +
-      escapeHtml(
-        data.existingTime
-      );
+      data.existingTime;
 
 
     status.innerText =
@@ -1043,74 +986,256 @@ function displayAttendanceResult(
   }
 
 
-  if (
-    data.type ===
-    "not_found"
-  ) {
+  if (data.type === "not_found") {
 
-    result.innerHTML =
+    hideProfile();
 
-      "✕ MURID TIDAK DIJUMPAI<br><br>" +
 
+    document
+      .getElementById("studentName")
+      .innerText =
+      "Murid Tidak Dijumpai";
+
+
+    document
+      .getElementById("studentClass")
+      .innerText =
+      "";
+
+
+    document
+      .getElementById("studentId")
+      .innerText =
       "QR: " +
-      escapeHtml(
-        data.qrCode
-      );
+      data.qrCode;
+
+
+    setStatus(
+      "✕ QR CODE TIDAK SAH",
+      "error"
+    );
 
 
     status.innerText =
-      "QR Code tidak terdapat dalam Data Murid.";
+      "QR tidak terdapat dalam Data Murid.";
 
     return;
 
   }
 
 
-  result.innerText =
+  setStatus(
     data.message ||
-    "Ralat SATS.";
-
-
-  status.innerText =
-    "Ralat berlaku.";
+    "Ralat sistem SATS.",
+    "error"
+  );
 
 }
 
 
 /* ==================================================
-   BASIC HTML ESCAPE
+   SHOW STUDENT
    ================================================== */
 
-function escapeHtml(
-  value
-) {
+function showStudent(student) {
 
-  return String(
-    value || ''
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
+  document
+    .getElementById("studentName")
+    .innerText =
+    student.name || "";
+
+
+  document
+    .getElementById("studentClass")
+    .innerText =
+    student.className
+      ? "Kelas " + student.className
+      : "";
+
+
+  document
+    .getElementById("studentId")
+    .innerText =
+    student.id
+      ? "ID: " + student.id
+      : "";
+
+
+  const profile =
+    document.getElementById("profile");
+
+
+  if (student.profile) {
+
+    profile.src =
+      student.profile;
+
+    profile.style.display =
+      "block";
+
+  }
+
+  else {
+
+    hideProfile();
+
+  }
 
 }
+
+
+/* ==================================================
+   HIDE PROFILE
+   ================================================== */
+
+function hideProfile() {
+
+  document
+    .getElementById("profile")
+    .style.display =
+    "none";
+
+}
+
+
+/* ==================================================
+   STATUS
+   ================================================== */
+
+function setStatus(text, type) {
+
+  const status =
+    document.getElementById("status");
+
+
+  status.innerText =
+    text;
+
+
+  status.className =
+    "status " + type;
+
+}
+
+
+/* ==================================================
+   RESTART SCANNER
+   ================================================== */
+
+function restartScanner() {
+
+  document
+    .getElementById("result")
+    .style.display =
+    "none";
+
+
+  document
+    .getElementById("studentName")
+    .innerText = "";
+
+
+  document
+    .getElementById("studentClass")
+    .innerText = "";
+
+
+  document
+    .getElementById("studentId")
+    .innerText = "";
+
+
+  document
+    .getElementById("datetime")
+    .innerText = "";
+
+
+  hideProfile();
+
+
   startScanner();
+
+}
+
+
+/* ==================================================
+   DATA MURID
+   ================================================== */
+
+function loadStudents() {
+
+  /*
+   * The current Apps Script API already supports
+   * QR scanning. Student management API endpoints
+   * will be enabled in the next backend step.
+   */
+
+  document
+    .getElementById("studentList")
+    .innerHTML =
+
+    "<div class='card'>" +
+
+    "<strong>Data Murid</strong><br><br>" +
+
+    "Modul pengurusan murid sedang disambungkan " +
+    "kepada backend SATS." +
+
+    "</div>";
+
+}
+
+
+/* ==================================================
+   ADD STUDENT
+   ================================================== */
+
+function addNewStudent() {
+
+  alert(
+    "Modul Tambah Murid akan diaktifkan selepas API Data Murid disambungkan."
+  );
+
+}
+
+
+/* ==================================================
+   SEARCH
+   ================================================== */
+
+function filterStudents() {
+
+  // Will be enabled with the Data Murid API.
+
+}
+
+
+/* ==================================================
+   HTML ESCAPE
+   ================================================== */
+
+function escapeHtml(value) {
+
+  return String(value || "")
+
+    .replace(/&/g, "&amp;")
+
+    .replace(/</g, "&lt;")
+
+    .replace(/>/g, "&gt;")
+
+    .replace(/"/g, "&quot;")
+
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* ==================================================
+   INITIALISE
+   ================================================== */
+
+showPage("dashboard");
 
 </script>
 
