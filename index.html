@@ -740,6 +740,26 @@
 </head>
 
 
+
+    .settings-class-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .settings-delete-class {
+      border: none;
+      border-radius: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 600;
+    }
+
 <body>
 
 <!-- SATS frontend: class dropdown + class filter + bulk QR printing -->
@@ -810,6 +830,12 @@
   <button
     id="navReports"
     onclick="showPage('reports')"
+  >
+    📊 Laporan
+  </button>
+<button
+    id="navReports"
+    onclick="showPage('settings')"
   >
     📊 Laporan
   </button>
@@ -1104,7 +1130,85 @@
   </div>
 
 
-  <!-- PRINT AREA -->
+  
+  <!-- SETTINGS PAGE -->
+  <section id="settingsPage" class="page-section" style="display:none;">
+
+    <div class="card">
+      <h2>⚙️ Tetapan Sekolah</h2>
+
+      <label>Nama Sekolah</label>
+      <input
+        id="schoolNameSetting"
+        class="form-input"
+        placeholder="Nama sekolah"
+      >
+      <button
+        class="print-button"
+        style="margin-top:10px;"
+        onclick="saveSchoolNameSetting()"
+      >
+        💾 Simpan Nama Sekolah
+      </button>
+    </div>
+
+    <div class="card">
+      <h2>🖼️ Logo Sekolah</h2>
+
+      <p style="color:#6b7280;">
+        Masukkan URL logo sekolah yang boleh dicapai oleh browser.
+      </p>
+
+      <input
+        id="schoolLogoSetting"
+        class="form-input"
+        placeholder="https://..."
+      >
+
+      <div style="margin-top:12px;">
+        <img
+          id="schoolLogoPreview"
+          alt="Logo Sekolah"
+          style="max-width:140px;max-height:140px;display:none;object-fit:contain;"
+        >
+      </div>
+
+      <button
+        class="print-button"
+        style="margin-top:10px;"
+        onclick="saveSchoolLogoSetting()"
+      >
+        💾 Simpan Logo
+      </button>
+    </div>
+
+    <div class="card">
+      <h2>👩‍🏫 Senarai Kelas</h2>
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;">
+        <input
+          id="newClassSetting"
+          class="form-input"
+          placeholder="Contoh: 5A"
+        >
+
+        <button
+          class="print-button"
+          onclick="addClassSetting()"
+        >
+          ➕ Tambah
+        </button>
+      </div>
+
+      <div
+        id="settingsClassList"
+        style="margin-top:15px;"
+      ></div>
+    </div>
+
+  </section>
+
+<!-- PRINT AREA -->
   <div id="printArea" style="display:none;"></div>
 
   <!-- STUDENT LIST -->
@@ -2824,6 +2928,318 @@ document.addEventListener(
 
   }
 );
+
+
+/* =================================================
+   SCHOOL SETTINGS
+   ================================================= */
+
+function loadSchoolSettings() {
+
+  const url =
+    SATS_API +
+    "?action=getSettings";
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      console.warn(
+        "Tetapan tidak dapat dimuat:",
+        data && data.message
+      );
+      return;
+    }
+
+    const settings =
+      data.settings || {};
+
+    const schoolName =
+      settings.schoolName || "SATS";
+
+    const schoolLogo =
+      settings.schoolLogo || "";
+
+    const nameInput =
+      document.getElementById(
+        "schoolNameSetting"
+      );
+
+    const logoInput =
+      document.getElementById(
+        "schoolLogoSetting"
+      );
+
+    if (nameInput) {
+      nameInput.value = schoolName;
+    }
+
+    if (logoInput) {
+      logoInput.value = schoolLogo;
+    }
+
+    updateSchoolBrand(
+      schoolName,
+      schoolLogo
+    );
+
+    renderSettingsClasses(
+      settings.classes || []
+    );
+
+  });
+}
+
+
+function updateSchoolBrand(
+  schoolName,
+  schoolLogo
+) {
+
+  // Update common text elements without disturbing the rest of the UI.
+  document
+    .querySelectorAll(
+      "[data-school-name]"
+    )
+    .forEach(function(el) {
+      el.textContent =
+        schoolName || "SATS";
+    });
+
+  const logo =
+    document.getElementById(
+      "schoolLogoPreview"
+    );
+
+  if (logo) {
+
+    if (schoolLogo) {
+      logo.src = schoolLogo;
+      logo.style.display = "block";
+    } else {
+      logo.removeAttribute("src");
+      logo.style.display = "none";
+    }
+
+  }
+}
+
+
+function saveSchoolNameSetting() {
+
+  const input =
+    document.getElementById(
+      "schoolNameSetting"
+    );
+
+  const schoolName =
+    input
+      ? input.value.trim()
+      : "";
+
+  if (!schoolName) {
+    alert("Sila masukkan nama sekolah.");
+    return;
+  }
+
+  const url =
+    SATS_API +
+    "?action=setSchoolName" +
+    "&schoolName=" +
+    encodeURIComponent(schoolName);
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      alert(
+        (data && data.message) ||
+        "Gagal menyimpan nama sekolah."
+      );
+      return;
+    }
+
+    updateSchoolBrand(
+      schoolName,
+      ""
+    );
+
+    loadSchoolSettings();
+
+    alert(
+      "Nama sekolah berjaya disimpan."
+    );
+
+  });
+}
+
+
+function saveSchoolLogoSetting() {
+
+  const input =
+    document.getElementById(
+      "schoolLogoSetting"
+    );
+
+  const logo =
+    input
+      ? input.value.trim()
+      : "";
+
+  const url =
+    SATS_API +
+    "?action=setSchoolLogo" +
+    "&logo=" +
+    encodeURIComponent(logo);
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      alert(
+        (data && data.message) ||
+        "Gagal menyimpan logo."
+      );
+      return;
+    }
+
+    loadSchoolSettings();
+
+    alert(
+      "Logo sekolah berjaya disimpan."
+    );
+
+  });
+}
+
+
+function renderSettingsClasses(
+  classes
+) {
+
+  const container =
+    document.getElementById(
+      "settingsClassList"
+    );
+
+  if (!container) return;
+
+  if (!classes.length) {
+
+    container.innerHTML =
+      '<div style="color:#6b7280;">Tiada kelas.</div>';
+
+    return;
+
+  }
+
+  container.innerHTML =
+    classes.map(function(className) {
+
+      return (
+        '<div class="settings-class-row">' +
+          '<strong>' +
+            escapeHtml(className) +
+          '</strong>' +
+          '<button ' +
+            'class="settings-delete-class" ' +
+            'onclick="deleteClassSetting(' +
+              JSON.stringify(className) +
+            ')">' +
+            '🗑️ Padam' +
+          '</button>' +
+        '</div>'
+      );
+
+    }).join("");
+}
+
+
+function addClassSetting() {
+
+  const input =
+    document.getElementById(
+      "newClassSetting"
+    );
+
+  const className =
+    input
+      ? input.value.trim()
+      : "";
+
+  if (!className) {
+    alert("Sila masukkan nama kelas.");
+    return;
+  }
+
+  const url =
+    SATS_API +
+    "?action=addClass" +
+    "&className=" +
+    encodeURIComponent(className);
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      alert(
+        (data && data.message) ||
+        "Gagal menambah kelas."
+      );
+      return;
+    }
+
+    if (input) {
+      input.value = "";
+    }
+
+    renderSettingsClasses(
+      data.classes || []
+    );
+
+    loadClasses();
+    loadStudents();
+
+  });
+}
+
+
+function deleteClassSetting(
+  className
+) {
+
+  if (
+    !confirm(
+      "Padam kelas " +
+      className +
+      "?"
+    )
+  ) {
+    return;
+  }
+
+  const url =
+    SATS_API +
+    "?action=deleteClass" +
+    "&className=" +
+    encodeURIComponent(className);
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      alert(
+        (data && data.message) ||
+        "Gagal memadam kelas."
+      );
+      return;
+    }
+
+    renderSettingsClasses(
+      data.classes || []
+    );
+
+    loadClasses();
+    loadStudents();
+
+  });
+}
+
 
 </script>
 
