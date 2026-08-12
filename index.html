@@ -1173,13 +1173,21 @@
       <h2>🖼️ Logo Sekolah</h2>
 
       <p style="color:#6b7280;">
-        Masukkan URL logo sekolah yang boleh dicapai oleh browser.
+        Pilih logo sekolah dari komputer anda. Logo akan dikecilkan
+        secara automatik supaya sesuai disimpan dalam sistem SATS.
       </p>
 
       <input
-        id="schoolLogoSetting"
+        id="schoolLogoFile"
         class="form-input"
-        placeholder="https://..."
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onchange="previewSchoolLogoFile(this)"
+      >
+
+      <input
+        id="schoolLogoSetting"
+        type="hidden"
       >
 
       <div style="margin-top:12px;">
@@ -1193,9 +1201,9 @@
       <button
         class="print-button"
         style="margin-top:10px;"
-        onclick="saveSchoolLogoSetting()"
+        onclick="uploadSchoolLogo()"
       >
-        💾 Simpan Logo
+        🖼️ Upload & Simpan Logo
       </button>
     </div>
 
@@ -2948,6 +2956,23 @@ function loadSchoolSettings() {
       logoInput.value = schoolLogo;
     }
 
+    const logoPreview =
+      document.getElementById(
+        "schoolLogoPreview"
+      );
+
+    if (logoPreview) {
+
+      if (schoolLogo) {
+        logoPreview.src = schoolLogo;
+        logoPreview.style.display = "block";
+      } else {
+        logoPreview.removeAttribute("src");
+        logoPreview.style.display = "none";
+      }
+
+    }
+
     updateSchoolBrand(
       schoolName,
       schoolLogo
@@ -3061,42 +3086,249 @@ function saveSchoolNameSetting() {
 }
 
 
-function saveSchoolLogoSetting() {
+function previewSchoolLogoFile(input) {
+
+  const file = input && input.files
+    ? input.files[0]
+    : null;
+
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    alert("Sila pilih fail gambar.");
+    input.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+
+    const preview =
+      document.getElementById(
+        "schoolLogoPreview"
+      );
+
+    if (preview) {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    }
+
+  };
+
+  reader.readAsDataURL(file);
+}
+
+
+function uploadSchoolLogo() {
 
   const input =
     document.getElementById(
-      "schoolLogoSetting"
+      "schoolLogoFile"
     );
 
-  const logo =
-    input
-      ? input.value.trim()
-      : "";
+  if (!input || !input.files || !input.files.length) {
+    alert("Sila pilih logo sekolah dahulu.");
+    return;
+  }
 
-  const url =
-    SATS_API +
-    "?action=setSchoolLogo" +
-    "&logo=" +
-    encodeURIComponent(logo);
+  const file =
+    input.files[0];
 
-  callSATS(url, function(data) {
+  if (!file.type.startsWith("image/")) {
+    alert("Fail yang dipilih bukan gambar.");
+    return;
+  }
 
-    if (!data || !data.success) {
-      alert(
-        (data && data.message) ||
-        "Gagal menyimpan logo."
+  const reader =
+    new FileReader();
+
+  reader.onload = function(e) {
+
+    const source =
+      e.target.result;
+
+    const img =
+      new Image();
+
+    img.onload = function() {
+
+      const maxSize = 500;
+
+      let width =
+        img.naturalWidth || img.width;
+
+      let height =
+        img.naturalHeight || img.height;
+
+      if (!width || !height) {
+        alert("Logo tidak dapat dibaca.");
+        return;
+      }
+
+      const scale =
+        Math.min(
+          1,
+          maxSize / Math.max(width, height)
+        );
+
+      width =
+        Math.max(
+          1,
+          Math.round(width * scale)
+        );
+
+      height =
+        Math.max(
+          1,
+          Math.round(height * scale)
+        );
+
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx =
+        canvas.getContext(
+          "2d"
+        );
+
+      /*
+       * White background prevents transparent PNG
+       * from becoming black when converted to JPEG.
+       */
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(
+        0,
+        0,
+        width,
+        height
       );
-      return;
-    }
 
-    loadSchoolSettings();
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        width,
+        height
+      );
+
+      /*
+       * Keep the stored image small enough for Settings.
+       */
+      const dataUrl =
+        canvas.toDataURL(
+          "image/jpeg",
+          0.72
+        );
+
+      /*
+       * Google Sheets cells have a character limit.
+       * Reject unusually large images rather than
+       * saving a value that may fail.
+       */
+      if (dataUrl.length > 45000) {
+
+        alert(
+          "Logo masih terlalu besar. " +
+          "Sila pilih gambar yang lebih kecil."
+        );
+
+        return;
+      }
+
+      const url =
+        SATS_API +
+        "?action=setSchoolLogo" +
+        "&logo=" +
+        encodeURIComponent(
+          dataUrl
+        );
+
+      const button =
+        document.querySelector(
+          '[onclick="uploadSchoolLogo()"]'
+        );
+
+      if (button) {
+        button.disabled = true;
+        button.innerText =
+          "⏳ Menyimpan...";
+      }
+
+      callSATS(url, function(data) {
+
+        if (button) {
+          button.disabled = false;
+          button.innerText =
+            "🖼️ Upload & Simpan Logo";
+        }
+
+        if (!data || !data.success) {
+
+          alert(
+            (data && data.message) ||
+            "Gagal menyimpan logo."
+          );
+
+          return;
+        }
+
+        document.getElementById(
+          "schoolLogoSetting"
+        ).value =
+          data.schoolLogo ||
+          dataUrl;
+
+        updateSchoolBrand(
+          document.getElementById(
+            "schoolNameSetting"
+          ).value ||
+          "SATS",
+          data.schoolLogo ||
+          dataUrl
+        );
+
+        loadSchoolSettings();
+
+        alert(
+          "Logo sekolah berjaya disimpan."
+        );
+
+      });
+
+    };
+
+    img.onerror = function() {
+
+      alert(
+        "Logo tidak dapat diproses."
+      );
+
+    };
+
+    img.src =
+      source;
+
+  };
+
+  reader.onerror = function() {
 
     alert(
-      "Logo sekolah berjaya disimpan."
+      "Fail logo tidak dapat dibaca."
     );
 
-  });
+  };
+
+  reader.readAsDataURL(file);
 }
+
+
+
 
 
 function renderSettingsClasses(
