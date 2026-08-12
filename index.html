@@ -507,57 +507,7 @@
       margin-top: 10px;
     }
 
-    .student-select {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      flex: 0 0 auto;
-    }
-
-    .student-card-select-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .student-card-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .bulk-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .bulk-actions button {
-      width: 100%;
-      border: none;
-      border-radius: 10px;
-      padding: 11px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .bulk-secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .bulk-primary {
-      background: #111827;
-      color: white;
-    }
-
-    .bulk-count {
-      margin-top: 10px;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-        .print-button {
+    .print-button {
       width: 100%;
       border: none;
       border-radius: 11px;
@@ -616,39 +566,22 @@
         height: 150px;
         object-fit: contain;
       }
-      .print-student-card {
-        background: white;
-      }
-
-      .print-school-logo {
-        width: 55px;
-        height: 55px;
-        object-fit: contain;
-        margin-bottom: 5px;
-      }
-
-      .print-school-name {
-        font-size: 12px;
-        font-weight: bold;
-        margin-bottom: 5px;
-      }
-
-      .print-student-name {
-        font-size: 15px;
-        font-weight: bold;
-        margin-top: 6px;
-      }
-
-      .print-student-id,
-      .print-student-class {
-        font-size: 11px;
-        margin-top: 2px;
-      }
     }
 
     /* =========================================
        STUDENT LIST
        ========================================= */
+
+    .student-select {
+      width:20px;height:20px;cursor:pointer;flex:0 0 auto;
+    }
+    .student-select-wrap {
+      display:flex;align-items:flex-start;gap:12px;
+    }
+    .bulk-actions {
+      display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;
+    }
+    .bulk-actions button { flex:1;min-width:130px; }
 
     .student-card {
 
@@ -1194,39 +1127,20 @@
     </div>
 
     <div class="print-selection" id="printSelectionText">
-      Pilih kelas atau cari murid untuk melihat senarai.
+      Pilih kelas atau cari murid, kemudian cetak.
     </div>
 
-    <div class="bulk-count" id="selectedStudentCount">
-      0 murid dipilih
-    </div>
-
+    <button
+      id="bulkPrintButton"
+      class="print-button"
+      onclick="printFilteredStudents()"
+      disabled
+    >
+      🖨️ CETAK QR MURID
+    </button>
     <div class="bulk-actions">
-      <button
-        type="button"
-        class="bulk-secondary"
-        onclick="selectAllVisibleStudents()"
-      >
-        ☑️ Pilih Semua
-      </button>
-
-      <button
-        type="button"
-        class="bulk-secondary"
-        onclick="clearSelectedStudents()"
-      >
-        ☐ Nyahpilih
-      </button>
-
-      <button
-        id="bulkPrintButton"
-        type="button"
-        class="bulk-primary"
-        onclick="printSelectedStudents()"
-        disabled
-      >
-        🖨️ Cetak Kad
-      </button>
+      <button type="button" class="print-button" onclick="selectAllFilteredStudents()">☑️ Pilih Semua</button>
+      <button type="button" class="print-button" onclick="clearFilteredStudents()">☐ Nyahpilih</button>
     </div>
 
   </div>
@@ -1389,7 +1303,6 @@ let processingScan = false;
 let allStudents = [];
 let allClasses = [];
 let selectedStudentIds = new Set();
-let visibleStudentIds = [];
 
 
 /* =================================================
@@ -1448,7 +1361,6 @@ function showPage(pageName) {
 
     stopScanner();
 
-    loadClasses();
     loadStudents();
 
   }
@@ -1810,19 +1722,30 @@ function loadStudents() {
         data.students ||
         [];
 
-      // Keep class dropdowns synchronized with actual student data too.
-      const classesFromStudents =
-        allStudents
-          .map(function(student) {
-            return String(student.className || "").trim();
-          })
-          .filter(Boolean);
+      selectedStudentIds.clear();
 
+      // Clear any previous connection/error message.
+      container.innerHTML = "";
+
+      // Build the class dropdown directly from the student data.
+      // This avoids a second API request when opening Data Murid.
       allClasses =
-        Array.from(new Set(
-          allClasses.concat(classesFromStudents)
-        )).sort(function(a, b) {
-          return a.localeCompare(b, undefined, {numeric: true});
+        Array.from(
+          new Set(
+            allStudents
+              .map(function(student) {
+                return String(
+                  student.className || ""
+                ).trim();
+              })
+              .filter(Boolean)
+          )
+        ).sort(function(a, b) {
+          return a.localeCompare(
+            b,
+            undefined,
+            {numeric: true}
+          );
         });
 
       populateClassDropdowns();
@@ -1890,45 +1813,41 @@ function renderStudents(
   students
 ) {
 
+
   const container =
     document.getElementById(
       "studentList"
     );
 
-  visibleStudentIds =
-    students.map(function(student) {
-      return String(student.id || "");
-    });
 
-  if (!students.length) {
+  if (
+    !students.length
+  ) {
 
     container.innerHTML =
       "<div class='card empty'>" +
       "Tiada data murid." +
       "</div>";
 
-    updateSelectedStudentCount();
     return;
 
   }
 
+
   let html = "";
+
 
   students.forEach(
     function(student) {
 
-      const id =
-        String(student.id || "");
 
       const qrUrl =
         "https://quickchart.io/qr?text=" +
-        encodeURIComponent(id) +
+        encodeURIComponent(
+          student.id
+        ) +
         "&size=300";
 
-      const checked =
-        selectedStudentIds.has(id)
-          ? " checked"
-          : "";
 
       html +=
 
@@ -1936,37 +1855,35 @@ function renderStudents(
 
           "<div class='student-card-content'>" +
 
-            "<div class='student-card-select-row'>" +
+            "<div class='student-select-wrap'>" +
+              "<input type='checkbox' class='student-select' " +
+                "data-student-id='" + escapeAttribute(student.id) + "' " +
+                (selectedStudentIds.has(String(student.id)) ? "checked " : "") +
+                "onchange='toggleStudentSelection(this)'>" +
+              "<div>" +
 
-              "<input " +
-                "type='checkbox' " +
-                "class='student-select' " +
-                "data-student-id='" +
-                escapeAttribute(id) +
-                "'" +
-                checked +
-                " onchange='toggleStudentSelection(this)'>" +
-
-              "<div class='student-card-body'>" +
-
-                "<div class='student-card-name'>" +
-                  escapeHtml(student.name) +
-                "</div>" +
-
-                "<div class='student-card-info'>" +
-                  "ID: " +
-                  escapeHtml(student.id) +
-                "</div>" +
-
-                "<div class='student-card-info'>" +
-                  "Kelas: " +
-                  escapeHtml(student.className) +
-                "</div>" +
-
+              "<div class='student-card-name'>" +
+                escapeHtml(
+                  student.name
+                ) +
               "</div>" +
 
-            "</div>" +
+              "<div class='student-card-info'>" +
+                "ID: " +
+                escapeHtml(
+                  student.id
+                ) +
+              "</div>" +
 
+              "<div class='student-card-info'>" +
+                "Kelas: " +
+                escapeHtml(
+                  student.className
+                ) +
+              "</div>" +
+
+              "</div>" +
+            "</div>" +
             "<img " +
               "class='student-qr' " +
               "src='" +
@@ -1976,14 +1893,19 @@ function renderStudents(
 
           "</div>" +
 
+
           "<div class='student-actions'>" +
 
             "<button " +
               "class='delete-button' " +
               "onclick=\"deleteStudentFromApp('" +
-              escapeAttribute(id) +
+              escapeAttribute(
+                student.id
+              ) +
               "')\">" +
+
               "🗑️ Padam" +
+
             "</button>" +
 
           "</div>" +
@@ -1993,10 +1915,10 @@ function renderStudents(
     }
   );
 
+
   container.innerHTML =
     html;
 
-  updateSelectedStudentCount();
 }
 
 
@@ -2006,141 +1928,25 @@ function renderStudents(
 
 function filterStudents() {
 
-  const filtered =
-    getCurrentlyFilteredStudents();
-
-  renderStudents(
-    filtered
-  );
-
-  updatePrintButton(
-    filtered.length
-  );
-}
-
-function updatePrintButton(count) {
-
-  const text =
-    document.getElementById(
-      "printSelectionText"
-    );
-
-  if (text) {
-    text.innerText =
-      count
-        ? count + " murid dipaparkan."
-        : "Tiada murid untuk dipaparkan.";
-  }
-
-  updateSelectedStudentCount();
-}
-
-
-function toggleStudentSelection(checkbox) {
-
-  const id =
-    String(
-      checkbox.getAttribute(
-        "data-student-id"
-      ) || ""
-    );
-
-  if (!id) return;
-
-  if (checkbox.checked) {
-    selectedStudentIds.add(id);
-  } else {
-    selectedStudentIds.delete(id);
-  }
-
-  updateSelectedStudentCount();
-}
-
-
-function updateSelectedStudentCount() {
-
-  const countElement =
-    document.getElementById(
-      "selectedStudentCount"
-    );
-
-  const button =
-    document.getElementById(
-      "bulkPrintButton"
-    );
-
-  const count =
-    selectedStudentIds.size;
-
-  if (countElement) {
-    countElement.innerText =
-      count +
-      (count === 1
-        ? " murid dipilih"
-        : " murid dipilih");
-  }
-
-  if (button) {
-    button.disabled =
-      count === 0;
-  }
-}
-
-
-function selectAllVisibleStudents() {
-
-  visibleStudentIds.forEach(
-    function(id) {
-      if (id) {
-        selectedStudentIds.add(id);
-      }
-    }
-  );
-
-  renderStudents(
-    getCurrentlyFilteredStudents()
-  );
-}
-
-
-function clearSelectedStudents() {
-
-  visibleStudentIds.forEach(
-    function(id) {
-      selectedStudentIds.delete(id);
-    }
-  );
-
-  renderStudents(
-    getCurrentlyFilteredStudents()
-  );
-}
-
-
-function getCurrentlyFilteredStudents() {
-
-  const searchInput =
-    document.getElementById(
-      "studentSearch"
-    );
-
-  const classInput =
-    document.getElementById(
-      "studentClassFilter"
-    );
-
   const search =
-    searchInput
-      ? searchInput.value.trim().toLowerCase()
-      : "";
+    document
+      .getElementById("studentSearch")
+      .value
+      .trim()
+      .toLowerCase();
 
   const selectedClass =
-    classInput
-      ? classInput.value.trim().toLowerCase()
-      : "";
+    document
+      .getElementById("studentClassFilter")
+      .value
+      .trim()
+      .toLowerCase();
 
-  return allStudents.filter(
-    function(student) {
+  // IMPORTANT:
+  // This filtering is completely local.
+  // Selecting a class does NOT contact SATS API again.
+  const filtered =
+    allStudents.filter(function(student) {
 
       const id =
         String(student.id || "").toLowerCase();
@@ -2165,103 +1971,175 @@ function getCurrentlyFilteredStudents() {
         matchesSearch &&
         matchesClass
       );
+    });
+
+  renderStudents(filtered);
+  updatePrintButton(filtered.length);
+
+  const text =
+    document.getElementById(
+      "printSelectionText"
+    );
+
+  if (
+    text &&
+    !selectedStudentIds.size
+  ) {
+
+    if (selectedClass) {
+
+      text.innerText =
+        filtered.length +
+        " murid dalam kelas " +
+        document
+          .getElementById(
+            "studentClassFilter"
+          )
+          .value +
+        ".";
+
+    } else if (search) {
+
+      text.innerText =
+        filtered.length +
+        " murid ditemui.";
+
+    } else {
+
+      text.innerText =
+        "Pilih kelas atau cari murid, kemudian cetak.";
 
     }
-  );
+  }
 }
 
 
-function printSelectedStudents() {
+function toggleStudentSelection(checkbox) {
 
-  const students =
-    allStudents.filter(
-      function(student) {
-        return selectedStudentIds.has(
-          String(student.id || "")
-        );
-      }
-    );
+  const id = String(
+    checkbox.getAttribute("data-student-id") || ""
+  );
 
-  if (!students.length) {
-    alert(
-      "Sila pilih sekurang-kurangnya seorang murid."
+  if (!id) return;
+
+  if (checkbox.checked) {
+    selectedStudentIds.add(id);
+  } else {
+    selectedStudentIds.delete(id);
+  }
+
+  updateSelectedStudentCount();
+}
+
+
+function updateSelectedStudentCount() {
+
+  const button = document.getElementById("bulkPrintButton");
+  const text = document.getElementById("printSelectionText");
+  const count = selectedStudentIds.size;
+
+  if (button) button.disabled = count === 0;
+
+  if (text) {
+    text.innerText = count
+      ? count + " murid dipilih untuk cetakan."
+      : "Pilih murid untuk dicetak.";
+  }
+}
+
+
+function getFilteredStudentsForSelection() {
+
+  const search =
+    document.getElementById("studentSearch").value.trim().toLowerCase();
+
+  const selectedClass =
+    document.getElementById("studentClassFilter").value.trim().toLowerCase();
+
+  return allStudents.filter(function(student) {
+
+    const id = String(student.id || "").toLowerCase();
+    const name = String(student.name || "").toLowerCase();
+    const className = String(student.className || "").toLowerCase();
+
+    return (
+      (!search || id.includes(search) || name.includes(search) || className.includes(search)) &&
+      (!selectedClass || className === selectedClass)
     );
+  });
+}
+
+
+function selectAllFilteredStudents() {
+
+  getFilteredStudentsForSelection().forEach(function(student) {
+    selectedStudentIds.add(String(student.id || ""));
+  });
+
+  filterStudents();
+  updateSelectedStudentCount();
+}
+
+
+function clearFilteredStudents() {
+
+  getFilteredStudentsForSelection().forEach(function(student) {
+    selectedStudentIds.delete(String(student.id || ""));
+  });
+
+  filterStudents();
+  updateSelectedStudentCount();
+}
+
+
+function updatePrintButton(count) {
+
+  const button = document.getElementById("bulkPrintButton");
+  const text = document.getElementById("printSelectionText");
+
+  if (!button || !text) return;
+
+  button.disabled = selectedStudentIds.size === 0;
+
+  text.innerText = selectedStudentIds.size
+    ? selectedStudentIds.size + " murid dipilih untuk cetakan."
+    : (count
+        ? count + " murid dipaparkan. Pilih murid untuk dicetak."
+        : "Tiada murid untuk dipaparkan.");
+}
+
+
+function printFilteredStudents() {
+
+  const studentsToPrint =
+    allStudents.filter(function(student) {
+      return selectedStudentIds.has(String(student.id || ""));
+    });
+
+  if (!studentsToPrint.length) {
+    alert("Sila pilih sekurang-kurangnya seorang murid.");
     return;
   }
 
-  const printArea =
-    document.getElementById(
-      "printArea"
-    );
-
-  const schoolName =
-    document.getElementById(
-      "schoolName"
-    )?.innerText ||
-    "SATS";
-
-  const schoolLogo =
-    document.getElementById(
-      "schoolLogo"
-    )?.src ||
-    "";
+  const printArea = document.getElementById("printArea");
 
   printArea.innerHTML =
-    students.map(
-      function(student) {
+    studentsToPrint.map(function(student) {
 
-        const qrUrl =
-          "https://quickchart.io/qr?text=" +
-          encodeURIComponent(
-            student.id || ""
-          ) +
-          "&size=300";
+      const qrUrl =
+        "https://quickchart.io/qr?text=" +
+        encodeURIComponent(student.id) +
+        "&size=300";
 
-        const logoHtml =
-          schoolLogo
-            ? '<img class="print-school-logo" src="' +
-              escapeAttribute(schoolLogo) +
-              '" alt="Logo Sekolah">'
-            : "";
-
-        return (
-          '<div class="print-student-card">' +
-
-            logoHtml +
-
-            '<div class="print-school-name">' +
-              escapeHtml(schoolName) +
-            '</div>' +
-
-            '<img src="' +
-              qrUrl +
-              '" alt="QR Code">' +
-
-            '<div class="print-student-name">' +
-              escapeHtml(
-                student.name || ""
-              ) +
-            '</div>' +
-
-            '<div class="print-student-id">' +
-              "ID: " +
-              escapeHtml(
-                student.id || ""
-              ) +
-            '</div>' +
-
-            '<div class="print-student-class">' +
-              "Kelas: " +
-              escapeHtml(
-                student.className || ""
-              ) +
-            '</div>' +
-
-          '</div>'
-        );
-
-      }
-    ).join("");
+      return (
+        '<div class="print-student-card">' +
+          "<strong>" + escapeHtml(student.name || "") + "</strong><br>" +
+          "<div>ID: " + escapeHtml(student.id || "") + "</div>" +
+          "<div>Kelas: " + escapeHtml(student.className || "") + "</div>" +
+          '<img src="' + qrUrl + '" alt="QR Code">' +
+        "</div>"
+      );
+    }).join("");
 
   window.print();
 }
@@ -3136,7 +3014,6 @@ document.addEventListener(
 
     loadDashboard();
     loadClasses();
-    loadSchoolSettings();
 
   }
 );
@@ -3306,6 +3183,8 @@ function saveSchoolNameSetting() {
       );
       return;
     }
+
+    loadSchoolSettings();
 
     loadSchoolSettings();
 
