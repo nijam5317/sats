@@ -1192,13 +1192,151 @@ function loadStudents() {
 
 function addNewStudent() {
 
-  alert(
-    "Modul Tambah Murid akan diaktifkan selepas API Data Murid disambungkan."
-  );
+  const id =
+    document
+      .getElementById("studentIdInput")
+      .value
+      .trim();
+
+  const name =
+    document
+      .getElementById("studentNameInput")
+      .value
+      .trim();
+
+  const className =
+    document
+      .getElementById("studentClassInput")
+      .value
+      .trim();
+
+
+  if (!id || !name || !className) {
+
+    alert(
+      "Sila lengkapkan semua maklumat murid."
+    );
+
+    return;
+  }
+
+
+  const status =
+    document.getElementById("studentList");
+
+
+  status.innerHTML =
+    "<div class='card'>" +
+    "⏳ Menyimpan murid..." +
+    "</div>";
+
+
+  /*
+   * JSONP callback
+   */
+
+  const callbackName =
+    "addStudentCallback_" +
+    Date.now();
+
+
+  window[callbackName] =
+    function(data) {
+
+      try {
+
+        if (data.success) {
+
+          alert(
+            "✓ " +
+            data.message
+          );
+
+
+          document
+            .getElementById(
+              "studentIdInput"
+            )
+            .value = "";
+
+
+          document
+            .getElementById(
+              "studentNameInput"
+            )
+            .value = "";
+
+
+          document
+            .getElementById(
+              "studentClassInput"
+            )
+            .value = "";
+
+
+          loadStudents();
+
+        }
+
+        else {
+
+          alert(
+            data.message ||
+            "Gagal menyimpan murid."
+          );
+
+        }
+
+      }
+
+      finally {
+
+        delete window[
+          callbackName
+        ];
+
+      }
+
+    };
+
+
+  const script =
+    document.createElement("script");
+
+
+  script.src =
+    SATS_API +
+    "?action=addStudent" +
+    "&id=" +
+    encodeURIComponent(id) +
+    "&name=" +
+    encodeURIComponent(name) +
+    "&className=" +
+    encodeURIComponent(className) +
+    "&callback=" +
+    callbackName;
+
+
+  script.onerror =
+    function() {
+
+      alert(
+        "Ralat sambungan ke SATS."
+      );
+
+
+      delete window[
+        callbackName
+      ];
+
+    };
+
+
+  document
+    .body
+    .appendChild(script);
 
 }
-
-
 /* ==================================================
    SEARCH
    ================================================== */
