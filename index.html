@@ -735,12 +735,7 @@
 
     }
 
-  </style>
-
-</head>
-
-
-
+  
     .settings-class-row {
       display: flex;
       align-items: center;
@@ -759,6 +754,11 @@
       color: #991b1b;
       font-weight: 600;
     }
+
+  </style>
+
+</head>
+
 
 <body>
 
@@ -834,10 +834,10 @@
     📊 Laporan
   </button>
 <button
-    id="navReports"
+    id="navSettings"
     onclick="showPage('settings')"
   >
-    📊 Laporan
+    ⚙️ Tetapan
   </button>
 
 </div>
@@ -1132,7 +1132,7 @@
 
   
   <!-- SETTINGS PAGE -->
-  <section id="settingsPage" class="page-section" style="display:none;">
+  <section id="settings" class="page">
 
     <div class="card">
       <h2>⚙️ Tetapan Sekolah</h2>
@@ -1284,88 +1284,53 @@ let allClasses = [];
 
 function showPage(pageName) {
 
-
   document
     .querySelectorAll(".page")
-    .forEach(
-      function(page) {
+    .forEach(function(page) {
+      page.classList.remove("active");
+    });
 
-        page.classList.remove(
-          "active"
-        );
+  const target = document.getElementById(pageName);
 
-      }
-    );
+  if (!target) {
+    console.warn("Page tidak dijumpai:", pageName);
+    return;
+  }
 
-
-  document
-    .getElementById(pageName)
-    .classList.add("active");
-
+  target.classList.add("active");
 
   document
     .querySelectorAll(".nav button")
-    .forEach(
-      function(button) {
+    .forEach(function(button) {
+      button.classList.remove("active");
+    });
 
-        button.classList.remove(
-          "active"
-        );
-
-      }
-    );
-
-
-  if (
-    pageName ===
-    "dashboard"
-  ) {
+  if (pageName === "dashboard") {
 
     document
-      .getElementById(
-        "navDashboard"
-      )
-      .classList.add(
-        "active"
-      );
+      .getElementById("navDashboard")
+      .classList.add("active");
 
     stopScanner();
-
     loadDashboard();
 
   }
 
-
-  if (
-    pageName ===
-    "scanner"
-  ) {
+  if (pageName === "scanner") {
 
     document
-      .getElementById(
-        "navScanner"
-      )
-      .classList.add(
-        "active"
-      );
+      .getElementById("navScanner")
+      .classList.add("active");
 
     startScanner();
 
   }
 
-
-  if (
-    pageName ===
-    "students"
-  ) {
+  if (pageName === "students") {
 
     document
-      .getElementById(
-        "navStudents"
-      )
-      .classList.add(
-        "active"
-      );
+      .getElementById("navStudents")
+      .classList.add("active");
 
     stopScanner();
 
@@ -1374,21 +1339,24 @@ function showPage(pageName) {
 
   }
 
-
-  if (
-    pageName ===
-    "reports"
-  ) {
+  if (pageName === "reports") {
 
     document
-      .getElementById(
-        "navReports"
-      )
-      .classList.add(
-        "active"
-      );
+      .getElementById("navReports")
+      .classList.add("active");
 
     stopScanner();
+
+  }
+
+  if (pageName === "settings") {
+
+    document
+      .getElementById("navSettings")
+      .classList.add("active");
+
+    stopScanner();
+    loadSchoolSettings();
 
   }
 
@@ -3004,6 +2972,27 @@ function updateSchoolBrand(
       el.textContent =
         schoolName || "SATS";
     });
+
+  const headerName =
+    document.getElementById("schoolName");
+
+  if (headerName) {
+    headerName.textContent =
+      schoolName || "SATS";
+  }
+
+  const headerLogo =
+    document.getElementById("schoolLogo");
+
+  if (headerLogo) {
+    if (schoolLogo) {
+      headerLogo.src = schoolLogo;
+      headerLogo.style.display = "block";
+    } else {
+      headerLogo.removeAttribute("src");
+      headerLogo.style.display = "none";
+    }
+  }
 
   const logo =
     document.getElementById(
