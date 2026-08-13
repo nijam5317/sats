@@ -1866,6 +1866,22 @@
       class="report-highlight-grid"
     ></div>
 
+    <div
+      id="classReportCalendarSummary"
+      class="report-summary-grid"
+      style="margin-bottom:12px;"
+    >
+      <div class="report-summary-box">
+        <span>Hari Persekolahan</span>
+        <strong id="classReportSchoolDays">0</strong>
+      </div>
+
+      <div class="report-summary-box">
+        <span>Cuti / Bukan Persekolahan</span>
+        <strong id="classReportNonSchoolingDays">0</strong>
+      </div>
+    </div>
+
     <div style="overflow-x:auto;">
 
       <table
@@ -1967,6 +1983,23 @@
       <div class="report-summary-box">
         <span>Purata Kehadiran</span>
         <strong id="individualPercentage">0%</strong>
+      </div>
+    </div>
+
+
+    <div
+      id="reportCalendarSummary"
+      class="report-summary-grid"
+      style="margin-top:12px;"
+    >
+      <div class="report-summary-box">
+        <span>Hari Persekolahan</span>
+        <strong id="reportSchoolDays">0</strong>
+      </div>
+
+      <div class="report-summary-box">
+        <span>Cuti / Bukan Persekolahan</span>
+        <strong id="reportNonSchoolingDays">0</strong>
       </div>
     </div>
 
@@ -2341,6 +2374,23 @@ function loadAttendanceAnalysis() {
 function renderClassAnalysis(
   data
 ) {
+  const reportSchoolDays =
+    document.getElementById("classReportSchoolDays");
+
+  const reportNonSchoolingDays =
+    document.getElementById("classReportNonSchoolingDays");
+
+  if (reportSchoolDays) {
+    reportSchoolDays.textContent =
+      Number(data.schoolDays || 0);
+  }
+
+  if (reportNonSchoolingDays) {
+    reportNonSchoolingDays.textContent =
+      Number(data.nonSchoolingDays || 0);
+  }
+
+
 
   const rows =
     data.classes ||
@@ -2630,6 +2680,38 @@ function renderIndividualAnalysis() {
 
 
 function renderIndividualClassAnalysis() {
+  const individualSchoolDays =
+    document.getElementById("individualSchoolDays");
+
+  const individualCalendarSchoolDays =
+    document.getElementById("reportSchoolDays");
+
+  const individualCalendarNonSchooling =
+    document.getElementById("reportNonSchoolingDays");
+
+  const analysisData =
+    window.currentAttendanceAnalysis;
+
+  if (analysisData) {
+
+    if (individualSchoolDays) {
+      individualSchoolDays.textContent =
+        Number(analysisData.schoolDays || 0);
+    }
+
+    if (individualCalendarSchoolDays) {
+      individualCalendarSchoolDays.textContent =
+        Number(analysisData.schoolDays || 0);
+    }
+
+    if (individualCalendarNonSchooling) {
+      individualCalendarNonSchooling.textContent =
+        Number(analysisData.nonSchoolingDays || 0);
+    }
+
+  }
+
+
 
   const data =
     window.currentAttendanceAnalysis;
@@ -3086,7 +3168,11 @@ function cetakLaporanIndividu() {
       " – " +
       formatReportDate(data.endDate) +
       " | Kelas: " +
-      className,
+      className +
+      " | Hari Persekolahan: " +
+      Number(data.schoolDays || 0) +
+      " | Cuti/Bukan Persekolahan: " +
+      Number(data.nonSchoolingDays || 0),
     '<table><thead><tr>' +
       '<th>Bil</th><th>Nama Murid</th><th>ID</th><th>Kelas</th>' +
       '<th>Hari Sekolah</th><th>Hadir</th><th>Tidak Hadir</th>' +
@@ -3263,6 +3349,10 @@ function printIndividualClassReport() {
       ) +
       " | Kelas: " +
       className +
+      " | Hari Persekolahan: " +
+      Number(data.schoolDays || 0) +
+      " | Cuti/Bukan Persekolahan: " +
+      Number(data.nonSchoolingDays || 0) +
       " | Jumlah Murid: " +
       students.length,
     students
@@ -3341,7 +3431,11 @@ function cetakPerbandinganKelas() {
     " | " +
     (data.className
       ? "Kelas: " + data.className
-      : "Semua Kelas");
+      : "Semua Kelas") +
+    " | Hari Persekolahan: " +
+    Number(data.schoolDays || 0) +
+    " | Cuti/Bukan Persekolahan: " +
+    Number(data.nonSchoolingDays || 0);
 
   openPrintWindow(
     schoolName,
