@@ -1094,6 +1094,21 @@
       display: none;
     }
 
+
+    @media print {
+      #satsPrintReport .sats-print-table {
+        page-break-inside: auto;
+      }
+
+      #satsPrintReport .sats-print-table thead {
+        display: table-header-group;
+      }
+
+      #satsPrintReport .sats-print-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
 </style>
 
 </head>
@@ -1712,9 +1727,24 @@
   >
 
     <div
-      class="report-section-title"
+      class="report-section-header"
     >
-      📊 Analisis Mengikut Kelas
+      <div>
+        <div class="report-section-title">
+          📊 Analisis Mengikut Kelas
+        </div>
+        <div class="report-section-subtitle">
+          Perbandingan kehadiran setiap kelas bagi tempoh yang dipilih
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="print-button"
+        onclick="printClassAttendanceReport()"
+      >
+        🖨️ CETAK PDF KELAS
+      </button>
     </div>
 
     <div
@@ -1764,12 +1794,10 @@
     style="display:none;margin-top:15px;"
   >
 
-    <div
-      class="report-section-header"
-    >
+    <div class="report-section-header">
       <div>
         <div class="report-section-title">
-          👤 Analisis Individu Semua Murid
+          👤 Analisis Individu
         </div>
         <div
           id="individualAnalysisPeriod"
@@ -1780,15 +1808,32 @@
       <button
         type="button"
         class="print-button"
-        onclick="printAllStudentAttendanceReport()"
+        onclick="printIndividualClassReport()"
       >
-        🖨️ CETAK LAPORAN PDF
+        🖨️ CETAK PDF KELAS
       </button>
+    </div>
+
+    <div
+      class="report-filter-grid"
+      style="grid-template-columns:1fr;"
+    >
+      <div>
+        <label>Pilih Kelas</label>
+        <select
+          id="individualClass"
+          class="form-input"
+          onchange="renderIndividualClassAnalysis()"
+        >
+          <option value="">Pilih Kelas</option>
+        </select>
+      </div>
     </div>
 
     <div
       id="individualSummary"
       class="report-summary-grid"
+      style="display:none;"
     >
       <div class="report-summary-box">
         <span>Jumlah Murid</span>
@@ -1813,12 +1858,9 @@
 
     <div
       id="individualTableWrap"
-      style="overflow-x:auto;margin-top:15px;"
+      style="display:none;overflow-x:auto;margin-top:15px;"
     >
-
-      <table
-        class="report-table"
-      >
+      <table class="report-table">
         <thead>
           <tr>
             <th>Bil</th>
@@ -1832,11 +1874,8 @@
           </tr>
         </thead>
 
-        <tbody
-          id="individualAnalysisBody"
-        ></tbody>
+        <tbody id="individualAnalysisBody"></tbody>
       </table>
-
     </div>
 
   </div>
@@ -2397,79 +2436,122 @@ function renderClassAnalysis(
 }
 
 
-function populateIndividualClassesFromAnalysis(
-  data
-) {
+function populateIndividualClassesFromAnalysis(data) {
 
-  /*
-   * Analisis individu kini terus memaparkan SEMUA murid.
-   * Tiada lagi dropdown pilih murid.
-   */
-
-  renderAllStudentIndividualAnalysis(
-    data
-  );
-
-}
-
-
-function populateIndividualStudents() {
-  /*
-   * Dikekalkan untuk keserasian dengan versi lama.
-   * Analisis individu tidak lagi memerlukan pilihan murid.
-   */
-  return;
-}
-
-
-function renderIndividualAnalysis() {
-  /*
-   * Dikekalkan untuk keserasian dengan versi lama.
-   */
-  renderAllStudentIndividualAnalysis(
-    window.currentAttendanceAnalysis || {}
-  );
-}
-
-
-function renderAllStudentIndividualAnalysis(
-  data
-) {
-
-  const card =
+  const select =
     document.getElementById(
-      "individualAnalysisCard"
+      "individualClass"
     );
 
-  if (!card) return;
+  if (!select) return;
 
-  const students =
-    Array.isArray(
-      data.students
-    )
-      ? data.students.slice()
+  const rows =
+    Array.isArray(data.classes)
+      ? data.classes
       : [];
 
-  students.sort(
-    function(a, b) {
-
-      const classCompare =
-        String(
-          a.className || ""
-        ).localeCompare(
-          String(
-            b.className || ""
-          ),
+  const classNames =
+    rows
+      .map(function(row) {
+        return String(
+          row.className || ""
+        ).trim();
+      })
+      .filter(function(name) {
+        return !!name;
+      })
+      .sort(function(a, b) {
+        return a.localeCompare(
+          b,
           undefined,
           {
             numeric: true,
             sensitivity: "base"
           }
         );
+      });
 
-      if (classCompare !== 0) {
-        return classCompare;
-      }
+  select.innerHTML =
+    '<option value="">Pilih Kelas</option>' +
+    classNames.map(function(className) {
+      return (
+        '<option value="' +
+        escapeAttribute(className) +
+        '">' +
+        escapeHtml(className) +
+        '</option>'
+      );
+    }).join("");
+
+  document.getElementById(
+    "individualSummary"
+  ).style.display = "none";
+
+  document.getElementById(
+    "individualTableWrap"
+  ).style.display = "none";
+}
+
+
+function populateIndividualStudents() {
+  return;
+}
+
+
+function renderIndividualAnalysis() {
+  renderIndividualClassAnalysis();
+}
+
+
+function renderIndividualClassAnalysis() {
+
+  const data =
+    window.currentAttendanceAnalysis;
+
+  const className =
+    document.getElementById(
+      "individualClass"
+    ).value;
+
+  const summary =
+    document.getElementById(
+      "individualSummary"
+    );
+
+  const tableWrap =
+    document.getElementById(
+      "individualTableWrap"
+    );
+
+  const body =
+    document.getElementById(
+      "individualAnalysisBody"
+    );
+
+  if (!data || !className) {
+
+    summary.style.display = "none";
+    tableWrap.style.display = "none";
+    body.innerHTML = "";
+    return;
+  }
+
+  const students =
+    (Array.isArray(data.students)
+      ? data.students
+      : []
+    ).filter(function(student) {
+
+      return (
+        normalizeText(
+          student.className
+        ) ===
+        normalizeText(
+          className
+        )
+      );
+
+    }).sort(function(a, b) {
 
       return String(
         a.name || ""
@@ -2483,129 +2565,74 @@ function renderAllStudentIndividualAnalysis(
         }
       );
 
-    }
-  );
-
-  const body =
-    document.getElementById(
-      "individualAnalysisBody"
-    );
+    });
 
   if (!students.length) {
 
-    body.innerHTML =
-      '<tr><td colspan="8" style="padding:15px;text-align:center;">Tiada data murid dalam tempoh ini.</td></tr>';
+    summary.style.display = "none";
+    tableWrap.style.display = "block";
 
-    updateIndividualSummary(
-      [],
-      data.schoolDays || 0
-    );
+    body.innerHTML =
+      '<tr><td colspan="8" style="padding:15px;text-align:center;">Tiada murid bagi kelas ini.</td></tr>';
 
     return;
   }
 
   body.innerHTML =
-    students.map(
-      function(student, index) {
+    students.map(function(student, index) {
 
-        return (
-          "<tr>" +
+      return (
+        "<tr>" +
+          "<td>" +
+            (index + 1) +
+          "</td>" +
 
-            "<td>" +
-              (index + 1) +
-            "</td>" +
+          "<td style='font-weight:600;'>" +
+            escapeHtml(
+              student.name || ""
+            ) +
+          "</td>" +
 
-            "<td style='font-weight:600;'>" +
-              escapeHtml(
-                student.name || ""
-              ) +
-            "</td>" +
+          "<td>" +
+            escapeHtml(
+              student.id || ""
+            ) +
+          "</td>" +
 
-            "<td>" +
-              escapeHtml(
-                student.id || ""
-              ) +
-            "</td>" +
+          "<td>" +
+            escapeHtml(
+              student.className || ""
+            ) +
+          "</td>" +
 
-            "<td>" +
-              escapeHtml(
-                student.className || ""
-              ) +
-            "</td>" +
+          "<td>" +
+            Number(
+              student.schoolDays || 0
+            ) +
+          "</td>" +
 
-            "<td>" +
-              Number(
-                student.schoolDays || 0
-              ) +
-            "</td>" +
+          "<td>" +
+            Number(
+              student.present || 0
+            ) +
+          "</td>" +
 
-            "<td>" +
-              Number(
-                student.present || 0
-              ) +
-            "</td>" +
+          "<td>" +
+            Number(
+              student.absent || 0
+            ) +
+          "</td>" +
 
-            "<td>" +
-              Number(
-                student.absent || 0
-              ) +
-            "</td>" +
-
-            "<td style='font-weight:700;'>" +
-              Number(
-                student.percentage || 0
-              ) +
-              "%" +
-            "</td>" +
-
-          "</tr>"
-        );
-
-      }
-    ).join("");
-
-  updateIndividualSummary(
-    students,
-    data.schoolDays || 0
-  );
-
-  const period =
-    document.getElementById(
-      "individualAnalysisPeriod"
-    );
-
-  if (period) {
-
-    period.innerText =
-      "Tempoh: " +
-      formatReportDate(
-        data.startDate
-      ) +
-      " – " +
-      formatReportDate(
-        data.endDate
-      ) +
-      (
-        data.className
-          ? " | Kelas: " +
-            data.className
-          : " | Semua Kelas"
+          "<td style='font-weight:700;'>" +
+            Number(
+              student.percentage || 0
+            ) +
+            "%" +
+          "</td>" +
+        "</tr>"
       );
 
-  }
-
-  card.style.display =
-    "block";
-}
-
-
-function updateIndividualSummary(
-  students,
-  schoolDays
-) {
-
-  const totalStudents =
-    students.length;
+    }).join("");
 
   const totalPresent =
     students.reduce(
@@ -2629,7 +2656,7 @@ function updateIndividualSummary(
       0
     );
 
-  const percentage =
+  const average =
     totalPossible
       ? Math.round(
           (
@@ -2643,12 +2670,14 @@ function updateIndividualSummary(
   document.getElementById(
     "individualTotalStudents"
   ).innerText =
-    totalStudents;
+    students.length;
 
   document.getElementById(
     "individualSchoolDays"
   ).innerText =
-    schoolDays || 0;
+    Number(
+      data.schoolDays || 0
+    );
 
   document.getElementById(
     "individualPresent"
@@ -2658,31 +2687,124 @@ function updateIndividualSummary(
   document.getElementById(
     "individualPercentage"
   ).innerText =
-    percentage +
-    "%";
+    average + "%";
 
+  const period =
+    document.getElementById(
+      "individualAnalysisPeriod"
+    );
+
+  if (period) {
+
+    period.innerText =
+      "Tempoh: " +
+      formatReportDate(
+        data.startDate
+      ) +
+      " – " +
+      formatReportDate(
+        data.endDate
+      ) +
+      " | Kelas: " +
+      className;
+
+  }
+
+  summary.style.display = "grid";
+  tableWrap.style.display = "block";
 }
 
 
-function printAllStudentAttendanceReport() {
+function getIndividualClassStudents() {
 
   const data =
     window.currentAttendanceAnalysis;
 
-  if (
-    !data ||
-    !Array.isArray(
-      data.students
-    ) ||
-    !data.students.length
-  ) {
+  const className =
+    document.getElementById(
+      "individualClass"
+    ).value;
 
-    alert(
-      "Sila papar analisis terlebih dahulu."
+  if (!data || !className) {
+    return [];
+  }
+
+  return (
+    Array.isArray(data.students)
+      ? data.students
+      : []
+  ).filter(function(student) {
+
+    return (
+      normalizeText(
+        student.className
+      ) ===
+      normalizeText(
+        className
+      )
     );
 
-    return;
-  }
+  }).sort(function(a, b) {
+
+    return String(
+      a.name || ""
+    ).localeCompare(
+      String(
+        b.name || ""
+      ),
+      undefined,
+      {
+        sensitivity: "base"
+      }
+    );
+
+  });
+}
+
+
+function buildPrintTableRows(students) {
+
+  return students.map(function(student, index) {
+
+    return (
+      "<tr>" +
+        "<td>" +
+          (index + 1) +
+        "</td>" +
+        "<td>" +
+          escapeHtml(student.name || "") +
+        "</td>" +
+        "<td>" +
+          escapeHtml(student.id || "") +
+        "</td>" +
+        "<td>" +
+          escapeHtml(student.className || "") +
+        "</td>" +
+        "<td>" +
+          Number(student.schoolDays || 0) +
+        "</td>" +
+        "<td>" +
+          Number(student.present || 0) +
+        "</td>" +
+        "<td>" +
+          Number(student.absent || 0) +
+        "</td>" +
+        "<td>" +
+          Number(student.percentage || 0) +
+          "%" +
+        "</td>" +
+      "</tr>"
+    );
+
+  }).join("");
+}
+
+
+function preparePrintRoot(
+  title,
+  subtitle,
+  students
+) {
 
   let printRoot =
     document.getElementById(
@@ -2705,159 +2827,39 @@ function printAllStudentAttendanceReport() {
 
   }
 
-  const students =
-    data.students.slice().sort(
-      function(a, b) {
-
-        const classCompare =
-          String(
-            a.className || ""
-          ).localeCompare(
-            String(
-              b.className || ""
-            ),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base"
-            }
-          );
-
-        if (classCompare !== 0) {
-          return classCompare;
-        }
-
-        return String(
-          a.name || ""
-        ).localeCompare(
-          String(
-            b.name || ""
-          ),
-          undefined,
-          {
-            sensitivity: "base"
-          }
-        );
-
-      }
-    );
-
   const schoolName =
     getCurrentSchoolNameForPrint();
 
   const logo =
     getCurrentSchoolLogoForPrint();
 
-  let logoHtml =
-    "";
+  let logoHtml = "";
 
   if (logo) {
 
     logoHtml =
       '<img src="' +
-      escapeAttribute(
-        logo
-      ) +
+      escapeAttribute(logo) +
       '" style="max-height:65px;max-width:100px;object-fit:contain;margin-bottom:6px;">';
 
   }
-
-  const rows =
-    students.map(
-      function(student, index) {
-
-        return (
-          "<tr>" +
-
-            "<td>" +
-              (index + 1) +
-            "</td>" +
-
-            "<td>" +
-              escapeHtml(
-                student.name || ""
-              ) +
-            "</td>" +
-
-            "<td>" +
-              escapeHtml(
-                student.id || ""
-              ) +
-            "</td>" +
-
-            "<td>" +
-              escapeHtml(
-                student.className || ""
-              ) +
-            "</td>" +
-
-            "<td>" +
-              Number(
-                student.schoolDays || 0
-              ) +
-            "</td>" +
-
-            "<td>" +
-              Number(
-                student.present || 0
-              ) +
-            "</td>" +
-
-            "<td>" +
-              Number(
-                student.absent || 0
-              ) +
-            "</td>" +
-
-            "<td>" +
-              Number(
-                student.percentage || 0
-              ) +
-              "%" +
-            "</td>" +
-
-          "</tr>"
-        );
-
-      }
-    ).join("");
 
   printRoot.innerHTML =
 
     '<div class="sats-print-title">' +
       logoHtml +
+
       '<div style="font-size:17px;font-weight:700;">' +
-        escapeHtml(
-          schoolName
-        ) +
+        escapeHtml(schoolName) +
       '</div>' +
-      '<div style="font-size:15px;font-weight:700;margin-top:3px;">LAPORAN ANALISIS KEHADIRAN MURID</div>' +
+
+      '<div style="font-size:15px;font-weight:700;margin-top:3px;">' +
+        escapeHtml(title) +
+      '</div>' +
     '</div>' +
 
     '<div class="sats-print-meta">' +
-      'Tempoh: ' +
-      escapeHtml(
-        formatReportDate(
-          data.startDate
-        )
-      ) +
-      ' – ' +
-      escapeHtml(
-        formatReportDate(
-          data.endDate
-        )
-      ) +
-      ' | ' +
-      (
-        data.className
-          ? 'Kelas: ' +
-            escapeHtml(
-              data.className
-            )
-          : 'Semua Kelas'
-      ) +
-      ' | Jumlah Murid: ' +
-      students.length +
+      escapeHtml(subtitle) +
     '</div>' +
 
     '<table class="sats-print-table">' +
@@ -2876,77 +2878,161 @@ function printAllStudentAttendanceReport() {
       '</thead>' +
 
       '<tbody>' +
-        rows +
+        buildPrintTableRows(students) +
       '</tbody>' +
 
     '</table>';
 
-  /*
-   * Browser print dialog can choose "Save as PDF".
-   * The report is isolated so the normal SATS screen
-   * is not printed.
-   */
   window.setTimeout(
     function() {
       window.print();
     },
     100
   );
-
 }
 
 
-function getCurrentSchoolNameForPrint() {
+function printIndividualClassReport() {
 
-  const input =
+  const data =
+    window.currentAttendanceAnalysis;
+
+  const className =
     document.getElementById(
-      "schoolNameSetting"
+      "individualClass"
+    ).value;
+
+  if (!data || !className) {
+
+    alert(
+      "Sila pilih kelas terlebih dahulu."
     );
 
-  if (
-    input &&
-    input.value
-  ) {
-    return input.value;
+    return;
   }
 
-  return (
-    window.schoolName ||
-    "SATS"
+  const students =
+    getIndividualClassStudents();
+
+  if (!students.length) {
+
+    alert(
+      "Tiada murid untuk kelas yang dipilih."
+    );
+
+    return;
+  }
+
+  preparePrintRoot(
+    "LAPORAN ANALISIS INDIVIDU MURID",
+    "Tempoh: " +
+      formatReportDate(
+        data.startDate
+      ) +
+      " – " +
+      formatReportDate(
+        data.endDate
+      ) +
+      " | Kelas: " +
+      className +
+      " | Jumlah Murid: " +
+      students.length,
+    students
   );
-
 }
 
 
-function getCurrentSchoolLogoForPrint() {
+function printAllStudentAttendanceReport() {
 
-  const input =
-    document.getElementById(
-      "schoolLogoSetting"
-    );
+  /*
+   * Backward-compatible alias.
+   * The individual report now prints only the selected class.
+   */
+  printIndividualClassReport();
+}
 
-  if (
-    input &&
-    input.value
-  ) {
-    return input.value;
-  }
 
-  const preview =
-    document.getElementById(
-      "schoolLogoPreview"
-    );
+function printClassAttendanceReport() {
+
+  const data =
+    window.currentAttendanceAnalysis;
 
   if (
-    preview &&
-    preview.src &&
-    preview.src !==
-      window.location.href
+    !data ||
+    !Array.isArray(data.classes) ||
+    !data.classes.length
   ) {
-    return preview.src;
+
+    alert(
+      "Sila papar analisis kelas terlebih dahulu."
+    );
+
+    return;
   }
 
-  return "";
+  const selectedClass =
+    String(
+      data.className || ""
+    ).trim();
+
+  let students =
+    Array.isArray(data.students)
+      ? data.students.slice()
+      : [];
+
+  let subtitle =
+    "Tempoh: " +
+    formatReportDate(
+      data.startDate
+    ) +
+    " – " +
+    formatReportDate(
+      data.endDate
+    );
+
+  if (selectedClass) {
+
+    students =
+      students.filter(function(student) {
+
+        return (
+          normalizeText(
+            student.className
+          ) ===
+          normalizeText(
+            selectedClass
+          )
+        );
+
+      });
+
+    subtitle +=
+      " | Kelas: " +
+      selectedClass;
+
+  } else {
+
+    subtitle +=
+      " | Semua Kelas";
+
+  }
+
+  if (!students.length) {
+
+    alert(
+      "Tiada data murid untuk laporan."
+    );
+
+    return;
+  }
+
+  preparePrintRoot(
+    "LAPORAN ANALISIS KEHADIRAN MENGIKUT KELAS",
+    subtitle +
+      " | Jumlah Murid: " +
+      students.length,
+    students
+  );
 }
 
 
