@@ -3023,48 +3023,74 @@ function openPrintWindow(
   printWindow.document.write(documentHtml);
   printWindow.document.close();
 
-  printWindow.focus();
+  let hasPrinted = false;
 
   const doPrint =
     function() {
+
+      if (hasPrinted) {
+        return;
+      }
+
+      hasPrinted = true;
+
       printWindow.focus();
       printWindow.print();
+
     };
 
   const images =
     printWindow.document.images;
 
   if (!images.length) {
-    setTimeout(doPrint, 500);
-    return;
-  }
 
-  let pending = images.length;
+    setTimeout(
+      doPrint,
+      700
+    );
 
-  Array.prototype.forEach.call(
-    images,
-    function(img) {
+  } else {
 
-      const done =
-        function() {
-          pending -= 1;
+    let pending =
+      images.length;
 
-          if (pending <= 0) {
-            setTimeout(doPrint, 300);
-          }
-        };
+    const imageDone =
+      function() {
 
-      if (img.complete) {
-        done();
-      } else {
-        img.onload = done;
-        img.onerror = done;
+        pending -= 1;
+
+        if (pending <= 0) {
+
+          setTimeout(
+            doPrint,
+            300
+          );
+
+        }
+
+      };
+
+    Array.prototype.forEach.call(
+      images,
+      function(img) {
+
+        if (img.complete) {
+          imageDone();
+        } else {
+          img.onload = imageDone;
+          img.onerror = imageDone;
+        }
+
       }
+    );
 
-    }
-  );
+    // Safety timeout; guarded so printing can only happen once.
+    setTimeout(
+      doPrint,
+      2500
+    );
 
-  setTimeout(doPrint, 2000);
+  }
 } 
 
 
