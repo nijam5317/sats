@@ -531,9 +531,83 @@
     }
 
     
+    /* Compact student list */
+    .student-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      margin: 7px 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      min-height: 62px;
+      box-sizing: border-box;
+    }
+
+    .student-card-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .student-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .student-select {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+
+    .student-card-name {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .student-card-info {
+      display: inline-block;
+      margin-right: 10px;
+      margin-top: 3px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .student-qr {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      object-fit: contain;
+    }
+
+    .student-actions {
+      flex: 0 0 auto;
+    }
+
+    .delete-button {
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 9px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #f3f4f6;
+    }
+
     .print-student-card {
-      width: 86mm;
-      height: 54mm;
+      width: 54mm;
+      height: 86mm;
       box-sizing: border-box;
       border: 1.5px solid #1f2937;
       border-radius: 4mm;
@@ -596,7 +670,7 @@
 
     .print-card-body {
       display: grid;
-      grid-template-columns: 1fr 22mm;
+      grid-template-columns: 1fr;
       gap: 4mm;
       align-items: center;
       flex: 1;
@@ -627,11 +701,11 @@
 
     .print-card-qr {
       width: 21mm;
-      height: 21mm;
+      height: 22mm;
       min-width: 21mm;
       min-height: 21mm;
       object-fit: contain;
-      justify-self: end;
+      justify-self: center;
     }
 
     .print-card-footer {
@@ -641,22 +715,50 @@
       font-size: 6.5px;
       text-align: center;
     }
-
     @media print {
       @page {
         size: A4 portrait;
-        margin: 10mm;
+        margin: 8mm;
+      }
+
+      html,
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      body * {
+        visibility: hidden !important;
+      }
+
+      #printArea,
+      #printArea * {
+        visibility: visible !important;
       }
 
       #printArea {
         display: grid !important;
-        grid-template-columns: repeat(2, 86mm) !important;
-        gap: 6mm !important;
-        align-content: start;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        grid-template-columns: repeat(3, 54mm) !important;
+        gap: 5mm !important;
+        align-content: start !important;
+        background: #fff !important;
       }
 
       .print-student-card {
+        width: 54mm !important;
+        height: 86mm !important;
         margin: 0 !important;
+        box-sizing: border-box !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
     }
 
@@ -2012,12 +2114,19 @@ function printFilteredStudents() {
     });
 
   if (!studentsToPrint.length) {
-    alert("Sila pilih sekurang-kurangnya seorang murid.");
+    alert(
+      "Sila pilih sekurang-kurangnya seorang murid dahulu."
+    );
     return;
   }
 
   const printArea =
     document.getElementById("printArea");
+
+  if (!printArea) {
+    alert("Ruang cetakan tidak dijumpai.");
+    return;
+  }
 
   const schoolName =
     String(
@@ -2093,7 +2202,13 @@ function printFilteredStudents() {
 
     }).join("");
 
-  window.print();
+  /*
+   * Give the browser a moment to build the print DOM.
+   * Then print only the dedicated print area through @media print.
+   */
+  setTimeout(function() {
+    window.print();
+  }, 150);
 }
 
 
