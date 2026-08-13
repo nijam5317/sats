@@ -1477,7 +1477,7 @@
       <button
         id="bulkPrintButton"
         class="print-button"
-        onclick="printFilteredStudents()"
+        onclick="cetakLaporanKelas()"
         disabled
       >
         🖨️ CETAK QR MURID
@@ -1741,9 +1741,9 @@
       <button
         type="button"
         class="print-button"
-        onclick="printClassAttendanceReport()"
+        onclick="cetakPerbandinganKelas()"
       >
-        🖨️ CETAK PDF KELAS
+        🖨️ CETAK LAPORAN KELAS
       </button>
     </div>
 
@@ -1808,9 +1808,9 @@
       <button
         type="button"
         class="print-button"
-        onclick="printIndividualClassReport()"
+        onclick="cetakLaporanIndividu()"
       >
-        🖨️ CETAK PDF KELAS
+        🖨️ CETAK LAPORAN INDIVIDU
       </button>
     </div>
 
@@ -2887,8 +2887,18 @@ function preparePrintRoot(
     function() {
       window.print();
     },
-    100
+    500
   );
+}
+
+
+function cetakLaporanKelas() {
+  printIndividualClassReport();
+}
+
+
+function cetakLaporanIndividu() {
+  printIndividualClassReport();
 }
 
 
@@ -2924,7 +2934,7 @@ function printIndividualClassReport() {
   }
 
   preparePrintRoot(
-    "LAPORAN ANALISIS INDIVIDU MURID",
+    "LAPORAN KEHADIRAN INDIVIDU MURID",
     "Tempoh: " +
       formatReportDate(
         data.startDate
@@ -2952,6 +2962,11 @@ function printAllStudentAttendanceReport() {
 }
 
 
+function cetakPerbandinganKelas() {
+  printClassAttendanceReport();
+}
+
+
 function printClassAttendanceReport() {
 
   const data =
@@ -2970,68 +2985,171 @@ function printClassAttendanceReport() {
     return;
   }
 
-  const selectedClass =
-    String(
-      data.className || ""
-    ).trim();
-
-  let students =
-    Array.isArray(data.students)
-      ? data.students.slice()
-      : [];
-
-  let subtitle =
-    "Tempoh: " +
-    formatReportDate(
-      data.startDate
-    ) +
-    " – " +
-    formatReportDate(
-      data.endDate
+  const rows =
+    data.classes.slice().sort(
+      function(a, b) {
+        return String(
+          a.className || ""
+        ).localeCompare(
+          String(
+            b.className || ""
+          ),
+          undefined,
+          {
+            numeric: true,
+            sensitivity: "base"
+          }
+        );
+      }
     );
 
-  if (selectedClass) {
+  let printRoot =
+    document.getElementById(
+      "satsPrintReport"
+    );
 
-    students =
-      students.filter(function(student) {
+  if (!printRoot) {
+
+    printRoot =
+      document.createElement(
+        "div"
+      );
+
+    printRoot.id =
+      "satsPrintReport";
+
+    document.body.appendChild(
+      printRoot
+    );
+
+  }
+
+  const schoolName =
+    getCurrentSchoolNameForPrint();
+
+  const logo =
+    getCurrentSchoolLogoForPrint();
+
+  let logoHtml = "";
+
+  if (logo) {
+
+    logoHtml =
+      '<img src="' +
+      escapeAttribute(logo) +
+      '" style="max-height:65px;max-width:100px;object-fit:contain;margin-bottom:6px;">';
+
+  }
+
+  const tableRows =
+    rows.map(
+      function(row, index) {
 
         return (
-          normalizeText(
-            student.className
-          ) ===
-          normalizeText(
-            selectedClass
-          )
+          "<tr>" +
+            "<td>" +
+              (index + 1) +
+            "</td>" +
+            "<td>" +
+              escapeHtml(
+                row.className || ""
+              ) +
+            "</td>" +
+            "<td>" +
+              Number(
+                row.studentCount || 0
+              ) +
+            "</td>" +
+            "<td>" +
+              Number(
+                row.schoolDays || 0
+              ) +
+            "</td>" +
+            "<td>" +
+              Number(
+                row.present || 0
+              ) +
+            "</td>" +
+            "<td>" +
+              Number(
+                row.absent || 0
+              ) +
+            "</td>" +
+            "<td style='font-weight:700;'>" +
+              Number(
+                row.percentage || 0
+              ) +
+              "%" +
+            "</td>" +
+          "</tr>"
         );
 
-      });
+      }
+    ).join("");
 
-    subtitle +=
-      " | Kelas: " +
-      selectedClass;
+  printRoot.innerHTML =
 
-  } else {
+    '<div class="sats-print-title">' +
+      logoHtml +
 
-    subtitle +=
-      " | Semua Kelas";
+      '<div style="font-size:17px;font-weight:700;">' +
+        escapeHtml(schoolName) +
+      '</div>' +
 
-  }
+      '<div style="font-size:15px;font-weight:700;margin-top:3px;">' +
+        'LAPORAN KEHADIRAN MENGIKUT KELAS' +
+      '</div>' +
+    '</div>' +
 
-  if (!students.length) {
+    '<div class="sats-print-meta">' +
+      'Tempoh: ' +
+      escapeHtml(
+        formatReportDate(
+          data.startDate
+        )
+      ) +
+      ' – ' +
+      escapeHtml(
+        formatReportDate(
+          data.endDate
+        )
+      ) +
+      ' | ' +
+      (
+        data.className
+          ? 'Kelas: ' +
+            escapeHtml(
+              data.className
+            )
+          : 'Semua Kelas'
+      ) +
+    '</div>' +
 
-    alert(
-      "Tiada data murid untuk laporan."
-    );
+    '<table class="sats-print-table">' +
 
-    return;
-  }
+      '<thead>' +
+        '<tr>' +
+          '<th>Bil</th>' +
+          '<th>Kelas</th>' +
+          '<th>Jumlah Murid</th>' +
+          '<th>Hari Sekolah</th>' +
+          '<th>Hadir</th>' +
+          '<th>Tidak Hadir</th>' +
+          '<th>% Kehadiran</th>' +
+        '</tr>' +
+      '</thead>' +
 
-  preparePrintRoot(
-    "LAPORAN ANALISIS KEHADIRAN MENGIKUT KELAS",
-    subtitle +
-      " | Jumlah Murid: " +
-      students.length,
-    students
+      '<tbody>' +
+        tableRows +
+      '</tbody>' +
+
+    '</table>';
+
+  window.setTimeout(
+    function() {
+      window.print();
+    },
+    500
   );
 }
 
