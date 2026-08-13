@@ -605,30 +605,45 @@
       background: #f3f4f6;
     }
 
-    .student-add-grid {
+    .edit-student-panel {
+      display: none;
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #f9fafb;
+    }
+
+    .edit-student-panel.active {
+      display: block;
+    }
+
+    .edit-student-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr 180px;
-      gap: 10px;
-      align-items: end;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
     }
 
-    .student-add-grid .form-input {
-      margin-top: 0;
+    .edit-button {
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #e5e7eb;
     }
 
-    .student-add-button {
-      width: 100%;
-      margin-top: 0;
+    .edit-button.primary {
+      background: #111827;
+      color: #fff;
     }
 
-    @media (max-width: 760px) {
-      .student-add-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .student-add-button {
-        margin-top: 0;
-      }
+    .student-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
     }
 
     .print-student-card {
@@ -1110,43 +1125,39 @@
 
   <div class="card">
 
-    <h3>➕ Tambah Murid</h3>
+    <h3>
+      ➕ Tambah Murid
+    </h3>
 
-    <div class="student-add-grid">
 
-      <input
-        id="studentIdInput"
-        class="form-input"
-        placeholder="ID Murid"
-      >
+    <input
+      id="studentIdInput"
+      class="form-input"
+      placeholder="ID Murid"
+    >
 
-      <input
-        id="studentNameInput"
-        class="form-input"
-        placeholder="Nama Murid"
-      >
 
-      <select
-        id="studentClassInput"
-        class="form-input"
-      >
-        <option value="">Pilih Kelas</option>
-      </select>
+    <input
+      id="studentNameInput"
+      class="form-input"
+      placeholder="Nama Murid"
+    >
 
-    </div>
+
+    <select
+      id="studentClassInput"
+      class="form-input"
+    >
+      <option value="">Pilih Kelas</option>
+    </select>
+
 
     <button
-      class="button button-dark student-add-button"
+      class="button button-dark"
       onclick="addNewStudent()"
-      style="margin-top:10px;"
     >
-      💾 SIMPAN MURID
+      SIMPAN MURID
     </button>
-
-    <div style="margin-top:8px;font-size:12px;color:#6b7280;">
-      Pilih kelas daripada senarai. Selepas disimpan, murid akan terus muncul
-      dalam Data Murid.
-    </div>
 
   </div>
 
@@ -1205,6 +1216,48 @@
 
   
 <!-- PRINT AREA -->
+  <!-- EDIT STUDENT -->
+  <div id="editStudentPanel" class="card edit-student-panel">
+
+    <h3>✏️ Edit Murid</h3>
+
+    <input id="editStudentOriginalId" type="hidden">
+
+    <input
+      id="editStudentName"
+      class="form-input"
+      placeholder="Nama Murid"
+    >
+
+    <select
+      id="editStudentClass"
+      class="form-input"
+    >
+      <option value="">Pilih Kelas</option>
+    </select>
+
+    <div class="edit-student-actions">
+
+      <button
+        type="button"
+        class="edit-button primary"
+        onclick="saveEditedStudent()"
+      >
+        💾 Simpan Perubahan
+      </button>
+
+      <button
+        type="button"
+        class="edit-button"
+        onclick="cancelEditStudent()"
+      >
+        Batal
+      </button>
+
+    </div>
+
+  </div>
+
   <div id="printArea" style="display:none;"></div>
 
   <!-- STUDENT LIST -->
@@ -1952,6 +2005,16 @@ function renderStudents(
 
 
           "<div class='student-actions'>" +
+            "<button " +
+              "class='edit-button' " +
+              "onclick=\"openEditStudent('" +
+              escapeAttribute(
+                student.id
+              ) +
+              "')\">" +
+              "✏️ Edit" +
+            "</button>" +
+
 
             "<button " +
               "class='delete-button' " +
@@ -2415,6 +2478,148 @@ function printFilteredStudents() {
 /* =================================================
    DELETE STUDENT
    ================================================= */
+
+function openEditStudent(studentId) {
+
+  const student =
+    allStudents.find(function(item) {
+      return String(item.id || "") ===
+        String(studentId || "");
+    });
+
+  if (!student) {
+    alert("Murid tidak dijumpai.");
+    return;
+  }
+
+  const panel =
+    document.getElementById("editStudentPanel");
+
+  const originalId =
+    document.getElementById("editStudentOriginalId");
+
+  const nameInput =
+    document.getElementById("editStudentName");
+
+  const classSelect =
+    document.getElementById("editStudentClass");
+
+  if (!panel || !originalId ||
+      !nameInput || !classSelect) {
+    alert("Borang Edit Murid tidak dijumpai.");
+    return;
+  }
+
+  originalId.value = String(student.id || "");
+  nameInput.value = String(student.name || "");
+
+  classSelect.innerHTML =
+    '<option value="">Pilih Kelas</option>' +
+    allClasses.map(function(className) {
+      return '<option value="' +
+        escapeAttribute(className) +
+        '">' +
+        escapeHtml(className) +
+        '</option>';
+    }).join("");
+
+  classSelect.value =
+    String(student.className || "");
+
+  panel.classList.add("active");
+
+  panel.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+
+function cancelEditStudent() {
+
+  const panel =
+    document.getElementById("editStudentPanel");
+
+  if (panel) {
+    panel.classList.remove("active");
+  }
+}
+
+
+function saveEditedStudent() {
+
+  const originalId =
+    document.getElementById(
+      "editStudentOriginalId"
+    ).value.trim();
+
+  const name =
+    document.getElementById(
+      "editStudentName"
+    ).value.trim();
+
+  const className =
+    document.getElementById(
+      "editStudentClass"
+    ).value.trim();
+
+  if (!originalId || !name || !className) {
+    alert(
+      "Sila lengkapkan nama dan kelas murid."
+    );
+    return;
+  }
+
+  const buttons =
+    document.querySelectorAll(
+      "#editStudentPanel button"
+    );
+
+  buttons.forEach(function(button) {
+    button.disabled = true;
+  });
+
+  const url =
+    SATS_API +
+    "?action=updateStudent" +
+    "&originalId=" +
+    encodeURIComponent(originalId) +
+    "&name=" +
+    encodeURIComponent(name) +
+    "&className=" +
+    encodeURIComponent(className);
+
+  callSATS(
+    url,
+    function(data) {
+
+      buttons.forEach(function(button) {
+        button.disabled = false;
+      });
+
+      if (data && data.success) {
+
+        alert(
+          "✓ Data murid berjaya dikemaskini."
+        );
+
+        cancelEditStudent();
+        loadStudents();
+
+      } else {
+
+        alert(
+          "✕ " +
+          (
+            (data && data.message) ||
+            "Gagal mengemaskini murid."
+          )
+        );
+      }
+    }
+  );
+}
+
 
 function deleteStudentFromApp(
   studentId
