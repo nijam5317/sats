@@ -4058,97 +4058,130 @@ function uploadSchoolLogo() {
 
   reader.onload = function(e) {
 
-    const source =
-      e.target.result;
-
     const img =
       new Image();
 
     img.onload = function() {
 
-      const maxSize = 180;
+      /*
+       * A normal file such as 242 KB can still create a
+       * Base64 string larger than the SATS storage target.
+       * Compress progressively instead of rejecting it.
+       */
 
-      let width =
-        img.naturalWidth || img.width;
+      const maxStoredChars = 7000;
 
-      let height =
-        img.naturalHeight || img.height;
+      let maxSize = 180;
+      let quality = 0.45;
+      let dataUrl = "";
 
-      if (!width || !height) {
-        alert("Logo tidak dapat dibaca.");
-        return;
+      for (
+        let attempt = 0;
+        attempt < 10;
+        attempt++
+      ) {
+
+        let width =
+          img.naturalWidth ||
+          img.width;
+
+        let height =
+          img.naturalHeight ||
+          img.height;
+
+        const scale =
+          Math.min(
+            1,
+            maxSize /
+              Math.max(
+                width,
+                height
+              )
+          );
+
+        width =
+          Math.max(
+            1,
+            Math.round(
+              width * scale
+            )
+          );
+
+        height =
+          Math.max(
+            1,
+            Math.round(
+              height * scale
+            )
+          );
+
+        const canvas =
+          document.createElement(
+            "canvas"
+          );
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx =
+          canvas.getContext(
+            "2d"
+          );
+
+        ctx.fillStyle =
+          "#ffffff";
+
+        ctx.fillRect(
+          0,
+          0,
+          width,
+          height
+        );
+
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          width,
+          height
+        );
+
+        dataUrl =
+          canvas.toDataURL(
+            "image/jpeg",
+            quality
+          );
+
+        if (
+          dataUrl.length <=
+          maxStoredChars
+        ) {
+          break;
+        }
+
+        maxSize =
+          Math.max(
+            80,
+            Math.round(
+              maxSize * 0.82
+            )
+          );
+
+        quality =
+          Math.max(
+            0.18,
+            quality - 0.04
+          );
       }
 
-      const scale =
-        Math.min(
-          1,
-          maxSize / Math.max(width, height)
-        );
-
-      width =
-        Math.max(
-          1,
-          Math.round(width * scale)
-        );
-
-      height =
-        Math.max(
-          1,
-          Math.round(height * scale)
-        );
-
-      const canvas =
-        document.createElement(
-          "canvas"
-        );
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx =
-        canvas.getContext(
-          "2d"
-        );
-
-      /*
-       * White background prevents transparent PNG
-       * from becoming black when converted to JPEG.
-       */
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(
-        0,
-        0,
-        width,
-        height
-      );
-
-      ctx.drawImage(
-        img,
-        0,
-        0,
-        width,
-        height
-      );
-
-      /*
-       * Keep the stored image small enough for Settings.
-       */
-      const dataUrl =
-        canvas.toDataURL(
-          "image/jpeg",
-          0.45
-        );
-
-      /*
-       * Google Sheets cells have a character limit.
-       * Reject unusually large images rather than
-       * saving a value that may fail.
-       */
-      if (dataUrl.length > 7000) {
+      if (
+        !dataUrl ||
+        dataUrl.length >
+          maxStoredChars
+      ) {
 
         alert(
-          "Logo masih terlalu besar. " +
-          "Sila pilih gambar yang lebih kecil."
+          "Logo tidak dapat dikecilkan ke saiz simpanan SATS."
         );
 
         return;
@@ -4168,66 +4201,98 @@ function uploadSchoolLogo() {
         );
 
       if (button) {
-        button.disabled = true;
+
+        button.disabled =
+          true;
+
         button.innerText =
           "⏳ Menyimpan...";
       }
 
-      callSATS(url, function(data) {
+      callSATS(
+        url,
+        function(data) {
 
-        if (button) {
-          button.disabled = false;
-          button.innerText =
-            "🖼️ Upload & Simpan Logo";
-        }
+          if (button) {
 
-        if (!data || !data.success) {
+            button.disabled =
+              false;
 
-          alert(
-            (data && data.message) ||
-            "Gagal menyimpan logo."
+            button.innerText =
+              "🖼️ Upload & Simpan Logo";
+          }
+
+          if (
+            !data ||
+            !data.success
+          ) {
+
+            alert(
+              (data &&
+                data.message) ||
+              "Gagal menyimpan logo."
+            );
+
+            return;
+          }
+
+          const savedLogo =
+            data.schoolLogo ||
+            dataUrl;
+
+          const settingInput =
+            document.getElementById(
+              "schoolLogoSetting"
+            );
+
+          if (settingInput) {
+            settingInput.value =
+              savedLogo;
+          }
+
+          const schoolNameInput =
+            document.getElementById(
+              "schoolNameSetting"
+            );
+
+          updateSchoolBrand(
+            schoolNameInput &&
+              schoolNameInput.value
+              ? schoolNameInput.value
+              : "SATS",
+            savedLogo
           );
 
-          return;
+          const preview =
+            document.getElementById(
+              "schoolLogoPreview"
+            );
+
+          if (preview) {
+
+            preview.src =
+              savedLogo;
+
+            preview.style.display =
+              "block";
+          }
+
+          alert(
+            "✓ Logo sekolah berjaya disimpan."
+          );
         }
-
-        document.getElementById(
-          "schoolLogoSetting"
-        ).value =
-          data.schoolLogo ||
-          dataUrl;
-
-        const savedLogo =
-          data.schoolLogo ||
-          dataUrl;
-
-        updateSchoolBrand(
-          document.getElementById(
-            "schoolNameSetting"
-          ).value ||
-          "SATS",
-          savedLogo
-        );
-
-        alert(
-          "Logo sekolah berjaya disimpan."
-        );
-
-      });
-
+      );
     };
 
     img.onerror = function() {
 
       alert(
-        "Logo tidak dapat diproses."
+        "Logo tidak dapat dibaca."
       );
-
     };
 
     img.src =
-      source;
-
+      e.target.result;
   };
 
   reader.onerror = function() {
@@ -4235,14 +4300,10 @@ function uploadSchoolLogo() {
     alert(
       "Fail logo tidak dapat dibaca."
     );
-
   };
 
   reader.readAsDataURL(file);
 }
-
-
-
 
 
 function renderSettingsClasses(
