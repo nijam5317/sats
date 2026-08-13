@@ -533,11 +533,11 @@
     
     .print-student-card {
       width: 86mm;
-      min-height: 54mm;
+      height: 54mm;
       box-sizing: border-box;
       border: 1.5px solid #1f2937;
-      border-radius: 10px;
-      padding: 7mm;
+      border-radius: 4mm;
+      padding: 4mm;
       background: #fff;
       break-inside: avoid;
       page-break-inside: avoid;
@@ -548,51 +548,76 @@
     }
 
     .print-card-school {
+      height: 12mm;
+      min-height: 12mm;
+      max-height: 12mm;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4mm;
       border-bottom: 1px solid #d1d5db;
-      padding-bottom: 5px;
-      margin-bottom: 6px;
+      padding-bottom: 2mm;
+      margin-bottom: 2mm;
+      overflow: hidden;
     }
 
     .print-card-school-logo {
-      width: 13mm;
-      height: 13mm;
+      width: 10mm;
+      height: 10mm;
+      min-width: 10mm;
+      max-width: 10mm;
+      min-height: 10mm;
+      max-height: 10mm;
       object-fit: contain;
-      flex: 0 0 auto;
+      flex: 0 0 10mm;
     }
 
     .print-card-school-name {
-      font-size: 13px;
+      flex: 1;
+      min-width: 0;
+      max-width: 58mm;
+      font-size: 10px;
       font-weight: 800;
       line-height: 1.15;
+      max-height: 24px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
     .print-card-title {
-      font-size: 9px;
+      font-size: 7px;
       font-weight: 700;
-      letter-spacing: .5px;
-      margin-bottom: 5px;
+      letter-spacing: .6px;
+      margin-bottom: 1mm;
     }
 
     .print-card-body {
       display: grid;
-      grid-template-columns: 1fr 25mm;
-      gap: 7px;
+      grid-template-columns: 1fr 22mm;
+      gap: 4mm;
       align-items: center;
+      flex: 1;
+      min-height: 0;
     }
 
     .print-card-name {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 7px;
+      line-height: 1.12;
+      margin-bottom: 3mm;
+      max-height: 30px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       text-transform: uppercase;
     }
 
     .print-card-row {
-      font-size: 10px;
+      font-size: 8.5px;
       line-height: 1.45;
     }
 
@@ -601,257 +626,21 @@
     }
 
     .print-card-qr {
-      width: 25mm;
-      height: 25mm;
+      width: 21mm;
+      height: 21mm;
+      min-width: 21mm;
+      min-height: 21mm;
       object-fit: contain;
       justify-self: end;
     }
 
     .print-card-footer {
       border-top: 1px solid #d1d5db;
-      margin-top: 6px;
-      padding-top: 4px;
-      font-size: 8px;
+      margin-top: 1mm;
+      padding-top: 1.5mm;
+      font-size: 6.5px;
       text-align: center;
     }
-
-@media print {
-      body * {
-        visibility: hidden !important;
-      }
-
-      #printArea,
-      #printArea * {
-        visibility: visible !important;
-      }
-
-      #printArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        padding: 12px;
-      }
-
-      .print-student-card {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 12px;
-        text-align: center;
-        min-height: 230px;
-      }
-
-      .print-student-card img {
-        width: 150px;
-        height: 150px;
-        object-fit: contain;
-      }
-    }
-
-    /* =========================================
-       STUDENT LIST
-       ========================================= */
-
-    .student-select {
-      width:20px;height:20px;cursor:pointer;flex:0 0 auto;
-    }
-    .student-select-wrap {
-      display:flex;align-items:flex-start;gap:12px;
-    }
-    .bulk-actions {
-      display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;
-    }
-    .bulk-actions button { flex:1;min-width:130px; }
-
-    .student-card {
-
-      background: white;
-
-      border-radius: 17px;
-
-      padding: 18px;
-
-      margin-bottom: 14px;
-
-      box-shadow:
-        0 4px 15px
-        rgba(0,0,0,.06);
-
-    }
-
-
-    .student-card-content {
-
-      display: flex;
-
-      justify-content: space-between;
-
-      gap: 20px;
-
-      align-items: center;
-
-    }
-
-
-    .student-card-name {
-
-      font-size: 19px;
-
-      font-weight: bold;
-
-    }
-
-
-    .student-card-info {
-
-      color: #6b7280;
-
-      margin-top: 5px;
-
-      font-size: 14px;
-
-    }
-
-
-    .student-qr {
-
-      width: 130px;
-
-      height: 130px;
-
-      object-fit: contain;
-
-    }
-
-
-    .student-actions {
-
-      display: flex;
-
-      gap: 8px;
-
-      margin-top: 12px;
-
-    }
-
-
-    .student-actions button {
-
-      border: none;
-
-      border-radius: 9px;
-
-      padding: 10px;
-
-      cursor: pointer;
-
-      font-weight: bold;
-
-    }
-
-
-    .delete-button {
-
-      background: #fee2e2;
-
-      color: #991b1b;
-
-    }
-
-
-    /* =========================================
-       EMPTY / LOADING
-       ========================================= */
-
-    .empty {
-
-      text-align: center;
-
-      padding: 30px;
-
-      color: #6b7280;
-
-    }
-
-
-    .loading {
-
-      text-align: center;
-
-      padding: 20px;
-
-      color: #6b7280;
-
-    }
-
-
-    /* =========================================
-       MOBILE
-       ========================================= */
-
-    @media (max-width: 650px) {
-
-      .page {
-
-        padding:
-          18px 13px;
-
-      }
-
-
-      .dashboard-grid {
-
-        grid-template-columns:
-          1fr 1fr;
-
-      }
-
-
-      .student-card-content {
-
-        flex-direction: column;
-
-        align-items: flex-start;
-
-      }
-
-
-      .student-qr {
-
-        width: 150px;
-
-        height: 150px;
-
-      }
-
-    }
-
-  
-
-      .settings-class-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .settings-delete-class {
-      border: none;
-      border-radius: 8px;
-      padding: 7px 10px;
-      cursor: pointer;
-      background: #fee2e2;
-      color: #991b1b;
-      font-weight: 600;
-    }
-
 
     @media print {
       @page {
