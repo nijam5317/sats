@@ -2898,8 +2898,137 @@ function cetakLaporanKelas() {
 
 
 function cetakLaporanIndividu() {
-  printIndividualClassReport();
+
+  const data =
+    window.currentAttendanceAnalysis;
+
+  const classSelect =
+    document.getElementById("individualClass");
+
+  const className =
+    classSelect
+      ? String(classSelect.value || "").trim()
+      : "";
+
+  if (!data || !className) {
+    alert("Sila pilih kelas terlebih dahulu.");
+    return;
+  }
+
+  const students =
+    getIndividualClassStudents();
+
+  if (!students.length) {
+    alert("Tiada murid untuk kelas yang dipilih.");
+    return;
+  }
+
+  const schoolName =
+    getCurrentSchoolNameForPrint();
+
+  const logo =
+    getCurrentSchoolLogoForPrint();
+
+  const logoHtml =
+    logo
+      ? '<img src="' + escapeAttribute(logo) +
+        '" style="max-height:65px;max-width:100px;object-fit:contain;">'
+      : "";
+
+  const tableRows =
+    students.map(function(student, index) {
+      return (
+        "<tr>" +
+          "<td>" + (index + 1) + "</td>" +
+          "<td>" + escapeHtml(student.name || "") + "</td>" +
+          "<td>" + escapeHtml(student.id || "") + "</td>" +
+          "<td>" + escapeHtml(student.className || "") + "</td>" +
+          "<td>" + Number(student.schoolDays || 0) + "</td>" +
+          "<td>" + Number(student.present || 0) + "</td>" +
+          "<td>" + Number(student.absent || 0) + "</td>" +
+          "<td>" + Number(student.percentage || 0) + "%</td>" +
+        "</tr>"
+      );
+    }).join("");
+
+  openPrintWindow(
+    schoolName,
+    logoHtml,
+    "LAPORAN KEHADIRAN INDIVIDU MURID",
+    "Tempoh: " +
+      formatReportDate(data.startDate) +
+      " – " +
+      formatReportDate(data.endDate) +
+      " | Kelas: " +
+      className,
+    '<table><thead><tr>' +
+      '<th>Bil</th><th>Nama Murid</th><th>ID</th><th>Kelas</th>' +
+      '<th>Hari Sekolah</th><th>Hadir</th><th>Tidak Hadir</th>' +
+      '<th>% Kehadiran</th>' +
+    '</tr></thead><tbody>' +
+      tableRows +
+    '</tbody></table>'
+  );
 }
+
+function openPrintWindow(
+  schoolName,
+  logoHtml,
+  title,
+  subtitle,
+  tableHtml
+) {
+
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=1000,height=800"
+    );
+
+  if (!printWindow) {
+    alert(
+      "Cetakan disekat oleh browser. Sila benarkan pop-up untuk laman SATS dan cuba lagi."
+    );
+    return;
+  }
+
+  const documentHtml =
+    '<!doctype html>' +
+    '<html><head><meta charset="utf-8">' +
+    '<title>' + escapeHtml(title) + '</title>' +
+    '<style>' +
+      '@page { size:A4 portrait; margin:12mm; }' +
+      'body { font-family:Arial,sans-serif; font-size:10px; color:#111; }' +
+      '.head { text-align:center; margin-bottom:14px; }' +
+      '.head img { display:block; margin:0 auto 6px; }' +
+      '.school { font-size:17px; font-weight:700; }' +
+      '.title { font-size:15px; font-weight:700; margin-top:4px; }' +
+      '.meta { font-size:11px; margin-top:6px; }' +
+      'table { width:100%; border-collapse:collapse; margin-top:14px; }' +
+      'th,td { border:1px solid #333; padding:5px; }' +
+      'th { font-weight:700; background:#f3f4f6; }' +
+      'tr { break-inside:avoid; page-break-inside:avoid; }' +
+    '</style></head><body>' +
+      '<div class="head">' +
+        logoHtml +
+        '<div class="school">' + escapeHtml(schoolName) + '</div>' +
+        '<div class="title">' + escapeHtml(title) + '</div>' +
+        '<div class="meta">' + escapeHtml(subtitle) + '</div>' +
+      '</div>' +
+      tableHtml +
+    '</body></html>';
+
+  printWindow.document.open();
+  printWindow.document.write(documentHtml);
+  printWindow.document.close();
+
+  printWindow.focus();
+
+  setTimeout(function() {
+    printWindow.print();
+  }, 700);
+} 
 
 
 function printIndividualClassReport() {
@@ -2963,9 +3092,82 @@ function printAllStudentAttendanceReport() {
 
 
 function cetakPerbandinganKelas() {
-  printClassAttendanceReport();
-}
 
+  const data =
+    window.currentAttendanceAnalysis;
+
+  if (
+    !data ||
+    !Array.isArray(data.classes) ||
+    !data.classes.length
+  ) {
+    alert("Sila papar analisis kelas terlebih dahulu.");
+    return;
+  }
+
+  const rows =
+    data.classes.slice().sort(function(a, b) {
+      return String(a.className || "").localeCompare(
+        String(b.className || ""),
+        undefined,
+        { numeric: true, sensitivity: "base" }
+      );
+    });
+
+  const schoolName =
+    getCurrentSchoolNameForPrint();
+
+  const logo =
+    getCurrentSchoolLogoForPrint();
+
+  const logoHtml =
+    logo
+      ? '<img src="' + escapeAttribute(logo) +
+        '" style="max-height:65px;max-width:100px;object-fit:contain;">'
+      : "";
+
+  const tableRows =
+    rows.map(function(row, index) {
+      return (
+        "<tr>" +
+          "<td>" + (index + 1) + "</td>" +
+          "<td>" + escapeHtml(row.className || "") + "</td>" +
+          "<td>" + Number(row.studentCount || 0) + "</td>" +
+          "<td>" + Number(row.schoolDays || 0) + "</td>" +
+          "<td>" + Number(row.present || 0) + "</td>" +
+          "<td>" + Number(row.absent || 0) + "</td>" +
+          "<td>" + Number(row.percentage || 0) + "%</td>" +
+        "</tr>"
+      );
+    }).join("");
+
+  const title =
+    "LAPORAN KEHADIRAN MENGIKUT KELAS";
+
+  const subtitle =
+    "Tempoh: " +
+    formatReportDate(data.startDate) +
+    " – " +
+    formatReportDate(data.endDate) +
+    " | " +
+    (data.className
+      ? "Kelas: " + data.className
+      : "Semua Kelas");
+
+  openPrintWindow(
+    schoolName,
+    logoHtml,
+    title,
+    subtitle,
+    '<table><thead><tr>' +
+      '<th>Bil</th><th>Kelas</th><th>Jumlah Murid</th>' +
+      '<th>Hari Sekolah</th><th>Hadir</th><th>Tidak Hadir</th>' +
+      '<th>% Kehadiran</th>' +
+    '</tr></thead><tbody>' +
+      tableRows +
+    '</tbody></table>'
+  );
+}
 
 function printClassAttendanceReport() {
 
