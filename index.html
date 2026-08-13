@@ -530,7 +530,92 @@
       color: #6b7280;
     }
 
-    @media print {
+    
+    .print-student-card {
+      width: 86mm;
+      min-height: 54mm;
+      box-sizing: border-box;
+      border: 1.5px solid #1f2937;
+      border-radius: 10px;
+      padding: 7mm;
+      background: #fff;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .print-card-school {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #d1d5db;
+      padding-bottom: 5px;
+      margin-bottom: 6px;
+    }
+
+    .print-card-school-logo {
+      width: 13mm;
+      height: 13mm;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    .print-card-school-name {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    .print-card-title {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      margin-bottom: 5px;
+    }
+
+    .print-card-body {
+      display: grid;
+      grid-template-columns: 1fr 25mm;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .print-card-name {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+    }
+
+    .print-card-row {
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .print-card-label {
+      font-weight: 700;
+    }
+
+    .print-card-qr {
+      width: 25mm;
+      height: 25mm;
+      object-fit: contain;
+      justify-self: end;
+    }
+
+    .print-card-footer {
+      border-top: 1px solid #d1d5db;
+      margin-top: 6px;
+      padding-top: 4px;
+      font-size: 8px;
+      text-align: center;
+    }
+
+@media print {
       body * {
         visibility: hidden !important;
       }
@@ -765,6 +850,25 @@
       background: #fee2e2;
       color: #991b1b;
       font-weight: 600;
+    }
+
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+
+      #printArea {
+        display: grid !important;
+        grid-template-columns: repeat(2, 86mm) !important;
+        gap: 6mm !important;
+        align-content: start;
+      }
+
+      .print-student-card {
+        margin: 0 !important;
+      }
     }
 
 </style>
@@ -2113,7 +2217,9 @@ function printFilteredStudents() {
 
   const studentsToPrint =
     allStudents.filter(function(student) {
-      return selectedStudentIds.has(String(student.id || ""));
+      return selectedStudentIds.has(
+        String(student.id || "")
+      );
     });
 
   if (!studentsToPrint.length) {
@@ -2121,7 +2227,22 @@ function printFilteredStudents() {
     return;
   }
 
-  const printArea = document.getElementById("printArea");
+  const printArea =
+    document.getElementById("printArea");
+
+  const schoolName =
+    String(
+      window.SATS_SCHOOL_NAME ||
+      localStorage.getItem("SATS_SCHOOL_NAME") ||
+      "SATS"
+    ).trim();
+
+  const schoolLogo =
+    String(
+      window.SATS_SCHOOL_LOGO ||
+      localStorage.getItem("SATS_SCHOOL_LOGO") ||
+      ""
+    ).trim();
 
   printArea.innerHTML =
     studentsToPrint.map(function(student) {
@@ -2131,14 +2252,58 @@ function printFilteredStudents() {
         encodeURIComponent(student.id) +
         "&size=300";
 
+      const logoHtml =
+        schoolLogo
+          ? '<img class="print-card-school-logo" src="' +
+              escapeAttribute(schoolLogo) +
+              '" alt="Logo sekolah">'
+          : "";
+
       return (
         '<div class="print-student-card">' +
-          "<strong>" + escapeHtml(student.name || "") + "</strong><br>" +
-          "<div>ID: " + escapeHtml(student.id || "") + "</div>" +
-          "<div>Kelas: " + escapeHtml(student.className || "") + "</div>" +
-          '<img src="' + qrUrl + '" alt="QR Code">' +
-        "</div>"
+
+          '<div class="print-card-school">' +
+            logoHtml +
+            '<div class="print-card-school-name">' +
+              escapeHtml(schoolName) +
+            '</div>' +
+          '</div>' +
+
+          '<div class="print-card-title">KAD MURID</div>' +
+
+          '<div class="print-card-body">' +
+
+            '<div>' +
+
+              '<div class="print-card-name">' +
+                escapeHtml(student.name || "") +
+              '</div>' +
+
+              '<div class="print-card-row">' +
+                '<span class="print-card-label">ID:</span> ' +
+                escapeHtml(student.id || "") +
+              '</div>' +
+
+              '<div class="print-card-row">' +
+                '<span class="print-card-label">KELAS:</span> ' +
+                escapeHtml(student.className || "") +
+              '</div>' +
+
+            '</div>' +
+
+            '<img class="print-card-qr" src="' +
+              qrUrl +
+              '" alt="QR Code">' +
+
+          '</div>' +
+
+          '<div class="print-card-footer">' +
+            'Sistem Kehadiran Murid • SATS' +
+          '</div>' +
+
+        '</div>'
       );
+
     }).join("");
 
   window.print();
