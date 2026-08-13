@@ -605,6 +605,32 @@
       background: #f3f4f6;
     }
 
+    .student-add-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 180px;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .student-add-grid .form-input {
+      margin-top: 0;
+    }
+
+    .student-add-button {
+      width: 100%;
+      margin-top: 0;
+    }
+
+    @media (max-width: 760px) {
+      .student-add-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .student-add-button {
+        margin-top: 0;
+      }
+    }
+
     .print-student-card {
       width: 54mm;
       height: 86mm;
@@ -1084,39 +1110,43 @@
 
   <div class="card">
 
-    <h3>
-      ➕ Tambah Murid
-    </h3>
+    <h3>➕ Tambah Murid</h3>
 
+    <div class="student-add-grid">
 
-    <input
-      id="studentIdInput"
-      class="form-input"
-      placeholder="ID Murid"
-    >
+      <input
+        id="studentIdInput"
+        class="form-input"
+        placeholder="ID Murid"
+      >
 
+      <input
+        id="studentNameInput"
+        class="form-input"
+        placeholder="Nama Murid"
+      >
 
-    <input
-      id="studentNameInput"
-      class="form-input"
-      placeholder="Nama Murid"
-    >
+      <select
+        id="studentClassInput"
+        class="form-input"
+      >
+        <option value="">Pilih Kelas</option>
+      </select>
 
-
-    <select
-      id="studentClassInput"
-      class="form-input"
-    >
-      <option value="">Pilih Kelas</option>
-    </select>
-
+    </div>
 
     <button
-      class="button button-dark"
+      class="button button-dark student-add-button"
       onclick="addNewStudent()"
+      style="margin-top:10px;"
     >
-      SIMPAN MURID
+      💾 SIMPAN MURID
     </button>
+
+    <div style="margin-top:8px;font-size:12px;color:#6b7280;">
+      Pilih kelas daripada senarai. Selepas disimpan, murid akan terus muncul
+      dalam Data Murid.
+    </div>
 
   </div>
 
