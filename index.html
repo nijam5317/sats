@@ -2077,6 +2077,9 @@ function loadAttendanceAnalysis() {
         return;
       }
 
+      window.currentAttendanceAnalysis =
+        data;
+
       renderClassAnalysis(
         data
       );
@@ -2084,9 +2087,6 @@ function loadAttendanceAnalysis() {
       populateIndividualClassesFromAnalysis(
         data
       );
-
-      window.currentAttendanceAnalysis =
-        data;
 
     }
   );
@@ -2329,22 +2329,75 @@ function populateIndividualClassesFromAnalysis(
   if (!select) return;
 
   const rows =
-    data.classes ||
-    [];
+    Array.isArray(data.classes)
+      ? data.classes
+      : [];
+
+  const studentClasses =
+    Array.isArray(data.students)
+      ? data.students
+          .map(
+            function(student) {
+              return String(
+                student.className ||
+                ""
+              ).trim();
+            }
+          )
+          .filter(
+            function(name) {
+              return !!name;
+            }
+          )
+      : [];
+
+  const classNames =
+    rows
+      .map(
+        function(row) {
+          return String(
+            row.className ||
+            ""
+          ).trim();
+        }
+      )
+      .concat(
+        studentClasses
+      )
+      .filter(
+        function(name, index, list) {
+          return (
+            name &&
+            list.indexOf(name) === index
+          );
+        }
+      )
+      .sort(
+        function(a, b) {
+          return a.localeCompare(
+            b,
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          );
+        }
+      );
 
   select.innerHTML =
     '<option value="">Pilih Kelas</option>' +
-    rows.map(
-      function(row) {
+    classNames.map(
+      function(className) {
 
         return (
           '<option value="' +
           escapeAttribute(
-            row.className
+            className
           ) +
           '">' +
           escapeHtml(
-            row.className
+            className
           ) +
           '</option>'
         );
@@ -2388,14 +2441,21 @@ function populateIndividualStudents() {
     return;
   }
 
+  const analysis =
+    window.currentAttendanceAnalysis ||
+    {};
+
+  const allStudents =
+    Array.isArray(
+      analysis.students
+    )
+      ? analysis.students
+      : [];
+
   const students =
-    (
-      window.currentAttendanceAnalysis &&
-      window.currentAttendanceAnalysis.students
-        ? window.currentAttendanceAnalysis.students
-        : []
-    ).filter(
+    allStudents.filter(
       function(student) {
+
         return (
           normalizeText(
             student.className
@@ -2404,33 +2464,43 @@ function populateIndividualStudents() {
             className
           )
         );
+
       }
     );
 
-  studentSelect.innerHTML =
-    '<option value="">Pilih Murid</option>' +
-    students.map(
-      function(student) {
+  if (!students.length) {
 
-        return (
-          '<option value="' +
-          escapeAttribute(
-            student.id
-          ) +
-          '">' +
-          escapeHtml(
-            student.name
-          ) +
-          ' (' +
-          escapeHtml(
-            student.id
-          ) +
-          ')' +
-          '</option>'
-        );
+    studentSelect.innerHTML =
+      '<option value="">Tiada murid dalam kelas ini</option>';
 
-      }
-    ).join("");
+  } else {
+
+    studentSelect.innerHTML =
+      '<option value="">Pilih Murid</option>' +
+      students.map(
+        function(student) {
+
+          return (
+            '<option value="' +
+            escapeAttribute(
+              student.id
+            ) +
+            '">' +
+            escapeHtml(
+              student.name
+            ) +
+            ' (' +
+            escapeHtml(
+              student.id
+            ) +
+            ')' +
+            '</option>'
+          );
+
+        }
+      ).join("");
+
+  }
 
   document.getElementById(
     "individualSummary"
@@ -4504,6 +4574,21 @@ function loadDashboard() {
 /* =================================================
    ESCAPE HTML
    ================================================= */
+
+function normalizeText(value) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      " "
+    );
+
+}
+
 
 function escapeHtml(
   value
