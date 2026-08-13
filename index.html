@@ -605,6 +605,36 @@
       background: #f3f4f6;
     }
 
+    .student-print-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      flex-wrap: nowrap;
+    }
+
+    .student-print-actions .print-button {
+      flex: 1 1 0;
+      min-width: 0;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .student-print-actions #bulkPrintButton {
+      flex: 1.35 1 0;
+    }
+
+    @media (max-width: 600px) {
+      .student-print-actions {
+        gap: 6px;
+      }
+
+      .student-print-actions .print-button {
+        font-size: 11px;
+        padding: 9px 6px;
+      }
+    }
+
     .edit-student-panel {
       display: none;
       margin-top: 10px;
@@ -1198,17 +1228,33 @@
       Pilih kelas atau cari murid, kemudian cetak.
     </div>
 
-    <button
-      id="bulkPrintButton"
-      class="print-button"
-      onclick="printFilteredStudents()"
-      disabled
-    >
-      🖨️ CETAK QR MURID
-    </button>
-    <div class="bulk-actions">
-      <button type="button" class="print-button" onclick="selectAllFilteredStudents()">☑️ Pilih Semua</button>
-      <button type="button" class="print-button" onclick="clearFilteredStudents()">☐ Nyahpilih</button>
+    <div class="student-print-actions">
+
+      <button
+        id="bulkPrintButton"
+        class="print-button"
+        onclick="printFilteredStudents()"
+        disabled
+      >
+        🖨️ CETAK QR MURID
+      </button>
+
+      <button
+        type="button"
+        class="print-button secondary-print-action"
+        onclick="selectAllFilteredStudents()"
+      >
+        ☑️ PILIH SEMUA
+      </button>
+
+      <button
+        type="button"
+        class="print-button secondary-print-action"
+        onclick="clearFilteredStudents()"
+      >
+        ☐ NYAH PILIH
+      </button>
+
     </div>
 
   </div>
