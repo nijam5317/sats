@@ -2233,14 +2233,12 @@ function printFilteredStudents() {
   const schoolName =
     String(
       window.SATS_SCHOOL_NAME ||
-      localStorage.getItem("SATS_SCHOOL_NAME") ||
       "SATS"
     ).trim();
 
   const schoolLogo =
     String(
       window.SATS_SCHOOL_LOGO ||
-      localStorage.getItem("SATS_SCHOOL_LOGO") ||
       ""
     ).trim();
 
@@ -3266,6 +3264,17 @@ function updateSchoolBrand(
   schoolLogo
 ) {
 
+  /*
+   * Keep the current school branding in memory so the
+   * print-card function uses exactly the same values
+   * shown in SATS.
+   */
+  window.SATS_SCHOOL_NAME =
+    schoolName || "SATS";
+
+  window.SATS_SCHOOL_LOGO =
+    schoolLogo || "";
+
   // Update common text elements without disturbing the rest of the UI.
   document
     .querySelectorAll(
@@ -3348,8 +3357,6 @@ function saveSchoolNameSetting() {
       );
       return;
     }
-
-    loadSchoolSettings();
 
     loadSchoolSettings();
 
