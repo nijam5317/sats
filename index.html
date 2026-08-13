@@ -2983,12 +2983,12 @@ function openPrintWindow(
     window.open(
       "",
       "_blank",
-      "width=1000,height=800"
+      "width=1000,height=800,noopener=no"
     );
 
   if (!printWindow) {
     alert(
-      "Cetakan disekat oleh browser. Sila benarkan pop-up untuk laman SATS dan cuba lagi."
+      "Popup cetakan disekat. Sila benarkan pop-up untuk laman SATS, kemudian tekan butang cetak sekali lagi."
     );
     return;
   }
@@ -3025,9 +3025,46 @@ function openPrintWindow(
 
   printWindow.focus();
 
-  setTimeout(function() {
-    printWindow.print();
-  }, 700);
+  const doPrint =
+    function() {
+      printWindow.focus();
+      printWindow.print();
+    };
+
+  const images =
+    printWindow.document.images;
+
+  if (!images.length) {
+    setTimeout(doPrint, 500);
+    return;
+  }
+
+  let pending = images.length;
+
+  Array.prototype.forEach.call(
+    images,
+    function(img) {
+
+      const done =
+        function() {
+          pending -= 1;
+
+          if (pending <= 0) {
+            setTimeout(doPrint, 300);
+          }
+        };
+
+      if (img.complete) {
+        done();
+      } else {
+        img.onload = done;
+        img.onerror = done;
+      }
+
+    }
+  );
+
+  setTimeout(doPrint, 2000);
 } 
 
 
@@ -5309,6 +5346,82 @@ function normalizeText(value) {
       " "
     );
 
+}
+
+
+function getCurrentSchoolNameForPrint() {
+
+  const input =
+    document.getElementById(
+      "schoolNameSetting"
+    );
+
+  if (
+    input &&
+    String(input.value || "").trim()
+  ) {
+    return String(input.value).trim();
+  }
+
+  const header =
+    document.getElementById(
+      "schoolName"
+    );
+
+  if (
+    header &&
+    String(header.innerText || "").trim()
+  ) {
+    return String(header.innerText).trim();
+  }
+
+  return "SATS";
+}
+
+
+function getCurrentSchoolLogoForPrint() {
+
+  const input =
+    document.getElementById(
+      "schoolLogoSetting"
+    );
+
+  if (
+    input &&
+    String(input.value || "").trim()
+  ) {
+    return String(input.value).trim();
+  }
+
+  const preview =
+    document.getElementById(
+      "schoolLogoPreview"
+    );
+
+  if (
+    preview &&
+    preview.src &&
+    preview.src !==
+      window.location.href
+  ) {
+    return preview.src;
+  }
+
+  const headerLogo =
+    document.getElementById(
+      "schoolLogo"
+    );
+
+  if (
+    headerLogo &&
+    headerLogo.src &&
+    headerLogo.src !==
+      window.location.href
+  ) {
+    return headerLogo.src;
+  }
+
+  return "";
 }
 
 
