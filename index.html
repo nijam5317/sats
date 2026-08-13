@@ -1109,6 +1109,25 @@
         page-break-inside: avoid;
       }
     }
+
+    /* =========================================
+       SCHOOL CALENDAR
+       ========================================= */
+    .calendar-toolbar { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:end; }
+    .calendar-status-help { margin-top:10px; color:#6b7280; font-size:12px; line-height:1.5; }
+    .calendar-table { width:100%; border-collapse:collapse; }
+    .calendar-table th, .calendar-table td { padding:9px; border-bottom:1px solid #e5e7eb; text-align:left; white-space:nowrap; }
+    .calendar-table th { font-weight:700; }
+    .calendar-badge { display:inline-block; padding:5px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+    .calendar-badge.schooling { background:#dcfce7; color:#166534; }
+    .calendar-badge.holiday { background:#fef3c7; color:#92400e; }
+    .calendar-badge.non-schooling { background:#fee2e2; color:#991b1b; }
+    .calendar-actions { display:flex; gap:6px; flex-wrap:nowrap; }
+    .calendar-action-button { border:0; border-radius:8px; padding:7px 9px; font-size:12px; cursor:pointer; background:#e5e7eb; }
+    .calendar-action-button.delete { background:#fee2e2; color:#991b1b; }
+    @media (max-width:850px) { .calendar-toolbar { grid-template-columns:1fr 1fr; } }
+    @media (max-width:560px) { .calendar-toolbar { grid-template-columns:1fr; } }
+
 </style>
 
 </head>
@@ -1187,6 +1206,13 @@
   >
     📊 Laporan
   </button>
+  <button
+    id="navCalendar"
+    onclick="showPage('calendar')"
+  >
+    📅 Kalendar Sekolah
+  </button>
+
 <button
     id="navSettings"
     onclick="showPage('settings')"
@@ -1561,6 +1587,94 @@
   </div>
 
 </section>
+  <!-- SCHOOL CALENDAR PAGE -->
+  <section id="calendar" class="page">
+
+    <div class="page-title">📅 Kalendar Sekolah</div>
+    <div class="page-subtitle">
+      Tetapkan hari persekolahan dan pengecualian daripada jadual lalai.
+    </div>
+
+    <div class="card">
+      <h3 id="calendarFormTitle">➕ Tambah Pengecualian Kalendar</h3>
+
+      <input id="calendarRowNumber" type="hidden">
+
+      <div class="calendar-toolbar">
+        <div>
+          <label>Tarikh Mula</label>
+          <input id="calendarStartDate" type="date" class="form-input">
+        </div>
+
+        <div>
+          <label>Tarikh Akhir</label>
+          <input id="calendarEndDate" type="date" class="form-input">
+        </div>
+
+        <div>
+          <label>Status</label>
+          <select id="calendarStatus" class="form-input">
+            <option value="SCHOOLING">🟢 Hari Persekolahan</option>
+            <option value="HOLIDAY">🏖️ Cuti</option>
+            <option value="NON_SCHOOLING">🔴 Bukan Hari Persekolahan</option>
+          </select>
+        </div>
+
+        <button type="button" class="print-button" style="margin:0;" onclick="saveSchoolCalendarEntry()">
+          💾 SIMPAN
+        </button>
+      </div>
+
+      <input id="calendarDescription" class="form-input"
+        placeholder="Keterangan, contoh: Kelas Ganti Sabtu / Cuti Sekolah">
+
+      <div class="calendar-status-help">
+        <strong>Peraturan lalai:</strong>
+        Isnin–Jumaat = hari persekolahan. Sabtu–Ahad = bukan hari persekolahan.
+        Rekod di sini akan mengatasi peraturan lalai.
+      </div>
+
+      <button type="button" class="button button-light" onclick="cancelSchoolCalendarEdit()">
+        BATAL / KOSONGKAN
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="report-section-header">
+        <div>
+          <div class="report-section-title">Senarai Pengecualian</div>
+          <div class="report-section-subtitle">
+            Kelas ganti pada Sabtu boleh ditetapkan sebagai Hari Persekolahan.
+          </div>
+        </div>
+        <button type="button" class="print-button" onclick="loadSchoolCalendar()">
+          🔄 MUAT SEMULA
+        </button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="calendar-table">
+          <thead>
+            <tr>
+              <th>Tarikh Mula</th>
+              <th>Tarikh Akhir</th>
+              <th>Status</th>
+              <th>Keterangan</th>
+              <th>Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="schoolCalendarBody">
+            <tr>
+              <td colspan="5" style="padding:15px;text-align:center;">Memuatkan kalendar...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+
 
 
   <!-- SETTINGS PAGE -->
@@ -1978,6 +2092,18 @@ function showPage(pageName) {
     prepareReportAnalysisPage();
 
   }
+  if (pageName === "calendar") {
+
+    document
+      .getElementById("navCalendar")
+      .classList.add("active");
+
+    stopScanner();
+    loadSchoolCalendar();
+
+  }
+
+
 
   if (pageName === "settings") {
 
@@ -3440,6 +3566,220 @@ function formatReportDate(
     parts[1] +
     "/" +
     parts[0]
+  );
+}
+
+
+
+/* =================================================
+   SCHOOL CALENDAR / CUTI SEKOLAH
+   ================================================= */
+
+let schoolCalendarEntries = [];
+
+function loadSchoolCalendar() {
+
+  const body = document.getElementById("schoolCalendarBody");
+  if (!body) return;
+
+  body.innerHTML =
+    '<tr><td colspan="5" style="padding:15px;text-align:center;">Memuatkan kalendar...</td></tr>';
+
+  callSATS(
+    SATS_API + "?action=getSchoolCalendar",
+    function(data) {
+
+      if (!data || !data.success) {
+        body.innerHTML =
+          '<tr><td colspan="5" style="padding:15px;text-align:center;color:#991b1b;">' +
+          escapeHtml((data && data.message) || "Gagal mendapatkan kalendar sekolah.") +
+          '</td></tr>';
+        return;
+      }
+
+      schoolCalendarEntries =
+        Array.isArray(data.calendar) ? data.calendar : [];
+
+      renderSchoolCalendar();
+    }
+  );
+}
+
+function renderSchoolCalendar() {
+
+  const body = document.getElementById("schoolCalendarBody");
+  if (!body) return;
+
+  if (!schoolCalendarEntries.length) {
+    body.innerHTML =
+      '<tr><td colspan="5" style="padding:15px;text-align:center;">Tiada pengecualian. Peraturan lalai masih digunakan.</td></tr>';
+    return;
+  }
+
+  body.innerHTML =
+    schoolCalendarEntries.map(function(entry) {
+
+      const status = String(entry.status || "");
+      let badgeClass = "non-schooling";
+      let label = "🔴 Bukan Hari Persekolahan";
+
+      if (status === "SCHOOLING") {
+        badgeClass = "schooling";
+        label = "🟢 Hari Persekolahan";
+      } else if (status === "HOLIDAY") {
+        badgeClass = "holiday";
+        label = "🏖️ Cuti";
+      }
+
+      return (
+        "<tr>" +
+          "<td>" + escapeHtml(formatCalendarDate(entry.startDate)) + "</td>" +
+          "<td>" + escapeHtml(formatCalendarDate(entry.endDate)) + "</td>" +
+          '<td><span class="calendar-badge ' + badgeClass + '">' + label + "</span></td>" +
+          "<td>" + escapeHtml(entry.description || "") + "</td>" +
+          "<td><div class=\"calendar-actions\">" +
+            '<button type="button" class="calendar-action-button" onclick="editSchoolCalendarEntry(' +
+              Number(entry.rowNumber || 0) + ')">✏️ Edit</button>' +
+            '<button type="button" class="calendar-action-button delete" onclick="deleteSchoolCalendarEntry(' +
+              Number(entry.rowNumber || 0) + ')">🗑️ Padam</button>' +
+          "</div></td>" +
+        "</tr>"
+      );
+    }).join("");
+}
+
+function formatCalendarDate(value) {
+
+  const raw = String(value || "");
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const parts = raw.split("-");
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+
+  return raw;
+}
+
+function saveSchoolCalendarEntry() {
+
+  const rowNumber =
+    Number(document.getElementById("calendarRowNumber").value || 0);
+
+  const startDate =
+    document.getElementById("calendarStartDate").value;
+
+  const endDate =
+    document.getElementById("calendarEndDate").value;
+
+  const status =
+    document.getElementById("calendarStatus").value;
+
+  const description =
+    document.getElementById("calendarDescription").value.trim();
+
+  if (!startDate || !endDate) {
+    alert("Sila pilih tarikh mula dan tarikh akhir.");
+    return;
+  }
+
+  if (startDate > endDate) {
+    alert("Tarikh mula tidak boleh melebihi tarikh akhir.");
+    return;
+  }
+
+  const action =
+    rowNumber > 0 ? "updateSchoolCalendar" : "addSchoolCalendar";
+
+  const url =
+    SATS_API +
+    "?action=" + action +
+    "&rowNumber=" + encodeURIComponent(rowNumber) +
+    "&startDate=" + encodeURIComponent(startDate) +
+    "&endDate=" + encodeURIComponent(endDate) +
+    "&status=" + encodeURIComponent(status) +
+    "&description=" + encodeURIComponent(description);
+
+  callSATS(url, function(data) {
+
+    if (!data || !data.success) {
+      alert((data && data.message) || "Gagal menyimpan kalendar sekolah.");
+      return;
+    }
+
+    cancelSchoolCalendarEdit();
+    loadSchoolCalendar();
+  });
+}
+
+function editSchoolCalendarEntry(rowNumber) {
+
+  const entry =
+    schoolCalendarEntries.find(function(item) {
+      return Number(item.rowNumber) === Number(rowNumber);
+    });
+
+  if (!entry) {
+    alert("Rekod kalendar tidak dijumpai.");
+    return;
+  }
+
+  document.getElementById("calendarRowNumber").value = Number(entry.rowNumber);
+  document.getElementById("calendarStartDate").value = entry.startDate || "";
+  document.getElementById("calendarEndDate").value = entry.endDate || entry.startDate || "";
+  document.getElementById("calendarStatus").value = entry.status || "HOLIDAY";
+  document.getElementById("calendarDescription").value = entry.description || "";
+
+  document.getElementById("calendarFormTitle").textContent =
+    "✏️ Edit Pengecualian Kalendar";
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelSchoolCalendarEdit() {
+
+  document.getElementById("calendarRowNumber").value = "";
+  document.getElementById("calendarStartDate").value = "";
+  document.getElementById("calendarEndDate").value = "";
+  document.getElementById("calendarStatus").value = "SCHOOLING";
+  document.getElementById("calendarDescription").value = "";
+
+  document.getElementById("calendarFormTitle").textContent =
+    "➕ Tambah Pengecualian Kalendar";
+}
+
+function deleteSchoolCalendarEntry(rowNumber) {
+
+  const entry =
+    schoolCalendarEntries.find(function(item) {
+      return Number(item.rowNumber) === Number(rowNumber);
+    });
+
+  if (!entry) return;
+
+  if (!confirm(
+    "Padam rekod " +
+    formatCalendarDate(entry.startDate) +
+    " – " +
+    formatCalendarDate(entry.endDate) +
+    "?"
+  )) {
+    return;
+  }
+
+  callSATS(
+    SATS_API +
+    "?action=deleteSchoolCalendar" +
+    "&rowNumber=" +
+    encodeURIComponent(rowNumber),
+    function(data) {
+
+      if (!data || !data.success) {
+        alert((data && data.message) || "Gagal memadam rekod kalendar.");
+        return;
+      }
+
+      loadSchoolCalendar();
+    }
   );
 }
 
