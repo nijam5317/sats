@@ -2152,14 +2152,6 @@ function printFilteredStudents() {
     return;
   }
 
-  const printArea =
-    document.getElementById("printArea");
-
-  if (!printArea) {
-    alert("Ruang cetakan tidak dijumpai.");
-    return;
-  }
-
   const schoolName =
     String(
       window.SATS_SCHOOL_NAME ||
@@ -2172,7 +2164,7 @@ function printFilteredStudents() {
       ""
     ).trim();
 
-  printArea.innerHTML =
+  const cards =
     studentsToPrint.map(function(student) {
 
       const qrUrl =
@@ -2182,50 +2174,44 @@ function printFilteredStudents() {
 
       const logoHtml =
         schoolLogo
-          ? '<img class="print-card-school-logo" src="' +
+          ? '<img class="school-logo" src="' +
               escapeAttribute(schoolLogo) +
-              '" alt="Logo sekolah">'
+              '" alt="Logo">'
           : "";
 
       return (
-        '<div class="print-student-card">' +
+        '<div class="student-card">' +
 
-          '<div class="print-card-school">' +
+          '<div class="school-header">' +
             logoHtml +
-            '<div class="print-card-school-name">' +
+            '<div class="school-name">' +
               escapeHtml(schoolName) +
             '</div>' +
           '</div>' +
 
-          '<div class="print-card-title">KAD MURID</div>' +
+          '<div class="card-title">KAD MURID</div>' +
 
-          '<div class="print-card-body">' +
-
-            '<div>' +
-
-              '<div class="print-card-name">' +
-                escapeHtml(student.name || "") +
-              '</div>' +
-
-              '<div class="print-card-row">' +
-                '<span class="print-card-label">ID:</span> ' +
-                escapeHtml(student.id || "") +
-              '</div>' +
-
-              '<div class="print-card-row">' +
-                '<span class="print-card-label">KELAS:</span> ' +
-                escapeHtml(student.className || "") +
-              '</div>' +
-
+          '<div class="student-info">' +
+            '<div class="student-name">' +
+              escapeHtml(student.name || "") +
             '</div>' +
 
-            '<img class="print-card-qr" src="' +
+            '<div class="student-row">' +
+              '<strong>ID:</strong> ' +
+              escapeHtml(student.id || "") +
+            '</div>' +
+
+            '<div class="student-row">' +
+              '<strong>KELAS:</strong> ' +
+              escapeHtml(student.className || "") +
+            '</div>' +
+
+            '<img class="qr" src="' +
               qrUrl +
               '" alt="QR Code">' +
-
           '</div>' +
 
-          '<div class="print-card-footer">' +
+          '<div class="footer">' +
             'Sistem Kehadiran Murid • SATS' +
           '</div>' +
 
@@ -2235,12 +2221,164 @@ function printFilteredStudents() {
     }).join("");
 
   /*
-   * Give the browser a moment to build the print DOM.
-   * Then print only the dedicated print area through @media print.
+   * Print through a completely isolated iframe.
+   * This prevents the SATS page itself from being printed and
+   * prevents the same card from appearing a second time.
    */
-  setTimeout(function() {
-    window.print();
-  }, 150);
+  const iframe =
+    document.createElement("iframe");
+
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.setAttribute("aria-hidden", "true");
+
+  document.body.appendChild(iframe);
+
+  const printDoc =
+    iframe.contentDocument ||
+    iframe.contentWindow.document;
+
+  printDoc.open();
+
+  printDoc.write(
+    '<!doctype html>' +
+    '<html><head><meta charset="UTF-8">' +
+
+    '<style>' +
+
+      '@page {' +
+        'size: A4 portrait;' +
+        'margin: 8mm;' +
+      '}' +
+
+      'html, body {' +
+        'margin:0;' +
+        'padding:0;' +
+        'background:#fff;' +
+      '}' +
+
+      'body {' +
+        'display:grid;' +
+        'grid-template-columns:repeat(3, 54mm);' +
+        'gap:5mm;' +
+        'align-content:start;' +
+      '}' +
+
+      '.student-card {' +
+        'width:54mm;' +
+        'height:86mm;' +
+        'box-sizing:border-box;' +
+        'border:1.5px solid #1f2937;' +
+        'border-radius:4mm;' +
+        'padding:4mm;' +
+        'background:#fff;' +
+        'break-inside:avoid;' +
+        'page-break-inside:avoid;' +
+        'overflow:hidden;' +
+        'display:flex;' +
+        'flex-direction:column;' +
+        'justify-content:space-between;' +
+      '}' +
+
+      '.school-header {' +
+        'height:12mm;' +
+        'min-height:12mm;' +
+        'display:flex;' +
+        'align-items:center;' +
+        'gap:4mm;' +
+        'border-bottom:1px solid #d1d5db;' +
+        'padding-bottom:2mm;' +
+        'margin-bottom:2mm;' +
+        'overflow:hidden;' +
+      '}' +
+
+      '.school-logo {' +
+        'width:10mm;' +
+        'height:10mm;' +
+        'object-fit:contain;' +
+        'flex:0 0 10mm;' +
+      '}' +
+
+      '.school-name {' +
+        'flex:1;' +
+        'font-size:10px;' +
+        'font-weight:800;' +
+        'line-height:1.15;' +
+        'max-height:24px;' +
+        'overflow:hidden;' +
+      '}' +
+
+      '.card-title {' +
+        'font-size:7px;' +
+        'font-weight:700;' +
+        'letter-spacing:.6px;' +
+        'text-align:center;' +
+        'margin-bottom:1mm;' +
+      '}' +
+
+      '.student-info {' +
+        'flex:1;' +
+        'display:flex;' +
+        'flex-direction:column;' +
+        'align-items:center;' +
+        'justify-content:center;' +
+        'text-align:center;' +
+      '}' +
+
+      '.student-name {' +
+        'font-size:13px;' +
+        'font-weight:800;' +
+        'line-height:1.12;' +
+        'margin-bottom:3mm;' +
+        'text-transform:uppercase;' +
+      '}' +
+
+      '.student-row {' +
+        'font-size:8.5px;' +
+        'line-height:1.45;' +
+      '}' +
+
+      '.qr {' +
+        'width:22mm;' +
+        'height:22mm;' +
+        'object-fit:contain;' +
+        'margin-top:3mm;' +
+      '}' +
+
+      '.footer {' +
+        'border-top:1px solid #d1d5db;' +
+        'margin-top:1mm;' +
+        'padding-top:1.5mm;' +
+        'font-size:6.5px;' +
+        'text-align:center;' +
+      '}' +
+
+    '</style></head><body>' +
+
+    cards +
+
+    '</body></html>'
+  );
+
+  printDoc.close();
+
+  iframe.onload = function() {
+
+    setTimeout(function() {
+
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+
+      setTimeout(function() {
+        iframe.remove();
+      }, 1000);
+
+    }, 200);
+  };
 }
 
 
