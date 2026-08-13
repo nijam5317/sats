@@ -715,6 +715,38 @@
       font-size: 6.5px;
       text-align: center;
     }
+
+    /* Center student information inside the portrait card */
+    .print-card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3mm;
+      flex: 1;
+      min-height: 0;
+      text-align: center;
+    }
+
+    .print-card-body > div {
+      width: 100%;
+      text-align: center;
+    }
+
+    .print-card-name {
+      width: 100%;
+      text-align: center;
+    }
+
+    .print-card-row {
+      text-align: center;
+    }
+
+    .print-card-qr {
+      align-self: center;
+      justify-self: center;
+    }
+
     @media print {
       @page {
         size: A4 portrait;
