@@ -1658,7 +1658,7 @@
       <button
         id="bulkPrintButton"
         class="print-button"
-        onclick="cetakLaporanKelas()"
+        onclick="printFilteredStudents()"
         disabled
       >
         🖨️ CETAK QR MURID
@@ -2233,6 +2233,7 @@ function showPage(pageName) {
 
     stopScanner();
 
+    loadClasses();
     loadStudents();
 
   }
@@ -3771,8 +3772,28 @@ function renderSchoolCalendar() {
     return;
   }
 
+  const seen = new Set();
+
+  const uniqueEntries =
+    schoolCalendarEntries.filter(function(entry) {
+
+      const key =
+        String(entry.startDate || "") + "|" +
+        String(entry.endDate || "") + "|" +
+        String(entry.status || "") + "|" +
+        String(entry.description || "").trim();
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+
+    });
+
   body.innerHTML =
-    schoolCalendarEntries.map(function(entry) {
+    uniqueEntries.map(function(entry) {
 
       const status = String(entry.status || "");
       let badgeClass = "non-schooling";
