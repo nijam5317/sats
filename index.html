@@ -1551,6 +1551,21 @@ input:focus-visible {
 }
 </style>
 
+
+<style id="sats-mobile-connection-ui">
+#satsConnectionStatus {
+  width: calc(100% - 24px);
+}
+
+@media (max-width: 700px) {
+  #satsConnectionStatus {
+    width: calc(100% - 20px);
+    font-size: 11px !important;
+    line-height: 1.35;
+  }
+}
+</style>
+
 </head>
 
 
@@ -4731,6 +4746,471 @@ function callSATS(
 }
 
 
+
+/* =================================================
+   SATS MOBILE CONNECTION / DATA MANAGER
+   ================================================= */
+
+let satsConnected = false;
+let satsBooting = false;
+let satsSchoolSettings = null;
+let satsClassesReady = false;
+let satsStudentsReady = false;
+
+
+function setSATSConnectionStatus(
+  state,
+  message
+) {
+
+  const status =
+    document.getElementById(
+      "satsConnectionStatus"
+    );
+
+  if (!status) return;
+
+  if (state === "connected") {
+
+    status.innerHTML =
+      '<span style="display:inline-flex;align-items:center;gap:6px;">' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>' +
+      '<span>SATS Connected</span>' +
+      '</span>';
+
+    status.style.color =
+      "#166534";
+
+    status.style.background =
+      "#ecfdf5";
+
+    status.style.borderColor =
+      "#bbf7d0";
+
+    return;
+  }
+
+  if (state === "loading") {
+
+    status.innerHTML =
+      '<span style="display:inline-flex;align-items:center;gap:6px;">' +
+      '<span>⏳</span>' +
+      '<span>' +
+      escapeHtml(
+        message ||
+        "Menyambung ke SATS..."
+      ) +
+      '</span>' +
+      '</span>';
+
+    status.style.color =
+      "#92400e";
+
+    status.style.background =
+      "#fffbeb";
+
+    status.style.borderColor =
+      "#fde68a";
+
+    return;
+  }
+
+  status.innerHTML =
+    '<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+    '<span>🔴</span>' +
+    '<span>' +
+    escapeHtml(
+      message ||
+      "Ralat sambungan ke SATS."
+    ) +
+    '</span>' +
+    '<button type="button" onclick="bootSATS(true)" ' +
+    'style="border:0;background:#991b1b;color:#fff;border-radius:7px;padding:4px 9px;cursor:pointer;">' +
+    'Cuba Semula' +
+    '</button>' +
+    '</span>';
+
+  status.style.color =
+    "#991b1b";
+
+  status.style.background =
+    "#fef2f2";
+
+  status.style.borderColor =
+    "#fecaca";
+
+}
+
+
+function ensureSATSConnectionBar() {
+
+  if (
+    document.getElementById(
+      "satsConnectionStatus"
+    )
+  ) {
+    return;
+  }
+
+  const status =
+    document.createElement(
+      "div"
+    );
+
+  status.id =
+    "satsConnectionStatus";
+
+  status.style.cssText =
+    "margin:10px auto 0;" +
+    "max-width:1100px;" +
+    "padding:7px 11px;" +
+    "border:1px solid #fde68a;" +
+    "border-radius:9px;" +
+    "font-size:12px;" +
+    "font-weight:700;" +
+    "background:#fffbeb;" +
+    "color:#92400e;" +
+    "box-sizing:border-box;";
+
+  status.innerHTML =
+    "⏳ Menyambung ke SATS...";
+
+  const topbar =
+    document.querySelector(
+      ".topbar"
+    );
+
+  if (topbar) {
+    topbar.appendChild(status);
+  } else {
+    document.body.prepend(status);
+  }
+
+}
+
+
+function bootSATS(
+  force
+) {
+
+  if (
+    satsBooting &&
+    !force
+  ) {
+    return;
+  }
+
+  satsBooting =
+    true;
+
+  satsConnected =
+    false;
+
+  satsSchoolSettings =
+    null;
+
+  satsClassesReady =
+    false;
+
+  satsStudentsReady =
+    false;
+
+  ensureSATSConnectionBar();
+
+  setSATSConnectionStatus(
+    "loading",
+    "Menyambung ke SATS..."
+  );
+
+  let settingsDone =
+    false;
+
+  let classesDone =
+    false;
+
+  let studentsDone =
+    false;
+
+  let settingsOK =
+    false;
+
+  let classesOK =
+    false;
+
+  let studentsOK =
+    false;
+
+
+  const complete =
+    function() {
+
+      if (
+        !settingsDone ||
+        !classesDone ||
+        !studentsDone
+      ) {
+        return;
+      }
+
+      satsBooting =
+        false;
+
+      if (
+        settingsOK &&
+        classesOK &&
+        studentsOK
+      ) {
+
+        satsConnected =
+          true;
+
+        setSATSConnectionStatus(
+          "connected"
+        );
+
+      } else {
+
+        setSATSConnectionStatus(
+          "error",
+          "Sebahagian data SATS tidak dapat dimuatkan."
+        );
+
+      }
+
+    };
+
+
+  callSATS(
+    SATS_API +
+    "?action=getSettings",
+    function(data) {
+
+      settingsDone =
+        true;
+
+      if (
+        data &&
+        data.success
+      ) {
+
+        settingsOK =
+          true;
+
+        satsSchoolSettings =
+          data;
+
+        applySchoolSettings(
+          data
+        );
+
+      }
+
+      complete();
+
+    }
+  );
+
+
+  callSATS(
+    SATS_API +
+    "?action=getClasses",
+    function(data) {
+
+      classesDone =
+        true;
+
+      if (
+        data &&
+        data.success
+      ) {
+
+        classesOK =
+          true;
+
+        allClasses =
+          Array.isArray(
+            data.classes
+          )
+            ? data.classes
+            : [];
+
+        satsClassesReady =
+          true;
+
+        populateAllClassSelectors();
+
+      }
+
+      complete();
+
+    }
+  );
+
+
+  callSATS(
+    SATS_API +
+    "?action=getStudents",
+    function(data) {
+
+      studentsDone =
+        true;
+
+      if (
+        data &&
+        data.success
+      ) {
+
+        studentsOK =
+          true;
+
+        allStudents =
+          Array.isArray(
+            data.students
+          )
+            ? data.students
+            : [];
+
+        satsStudentsReady =
+          true;
+
+        renderStudentDataFromCache();
+
+      }
+
+      complete();
+
+    }
+  );
+
+}
+
+
+function populateAllClassSelectors() {
+
+  try {
+    populateManualClasses();
+  } catch(error) {}
+
+  try {
+    populateReportClasses();
+  } catch(error) {}
+
+  try {
+    populateDashboardClasses(
+      allClasses
+    );
+  } catch(error) {}
+
+  try {
+    populateRiskClasses(
+      allClasses
+    );
+  } catch(error) {}
+
+  try {
+    populateStudentClassFilter();
+  } catch(error) {}
+
+}
+
+
+function renderStudentDataFromCache() {
+
+  try {
+
+    if (
+      typeof renderStudents ===
+      "function"
+    ) {
+      renderStudents(
+        allStudents
+      );
+    }
+
+  }
+
+  catch(error) {
+
+    console.warn(
+      "Cache murid tidak dapat dipaparkan:",
+      error
+    );
+
+  }
+
+}
+
+
+function applySchoolSettings(
+  data
+) {
+
+  if (!data) return;
+
+  const settings =
+    data.settings ||
+    data.school ||
+    data;
+
+  const schoolName =
+    settings.schoolName ||
+    settings.namaSekolah ||
+    settings.name ||
+    "";
+
+  const logo =
+    settings.logo ||
+    settings.logoUrl ||
+    settings.schoolLogo ||
+    "";
+
+  if (schoolName) {
+
+    const nodes =
+      document.querySelectorAll(
+        ".school-name, #schoolName, #schoolNameSetting"
+      );
+
+    nodes.forEach(
+      function(node) {
+
+        if (
+          node.tagName ===
+          "INPUT"
+        ) {
+          node.value =
+            schoolName;
+        } else {
+          node.innerText =
+            schoolName;
+        }
+
+      }
+    );
+
+  }
+
+  if (logo) {
+
+    const images =
+      document.querySelectorAll(
+        ".school-logo, #schoolLogo, #logoSekolah"
+      );
+
+    images.forEach(
+      function(image) {
+
+        image.src =
+          logo;
+
+      }
+    );
+
+  }
+
+}
+
+
 /* =================================================
    LOAD CLASSES
    ================================================= */
@@ -4738,6 +5218,14 @@ function callSATS(
 function loadClasses(
   done
 ) {
+
+  if (satsClassesReady) {
+    populateAllClassSelectors();
+    if (typeof done === "function") {
+      done(allClasses);
+    }
+    return;
+  }
 
   const addSelect = document.getElementById("studentClassInput");
   const filterSelect = document.getElementById("studentClassFilter");
@@ -8290,9 +8778,8 @@ document.addEventListener(
   "DOMContentLoaded",
   function() {
 
-    loadSchoolSettings();
-    loadClasses();
-    loadDashboard();
+    ensureSATSConnectionBar();
+    bootSATS();
 
   }
 );
