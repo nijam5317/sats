@@ -1504,6 +1504,53 @@ input:focus-visible {
 }
 </style>
 
+
+<style id="sats-camera-switch-ui">
+.scanner-camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid #d9e6e7;
+  border-radius: 12px;
+  background: #f7fbfb;
+}
+
+.scanner-camera-label {
+  font-weight: 700;
+  color: #0f2747;
+}
+
+.scanner-camera-select {
+  min-width: 170px;
+  width: auto;
+}
+
+.scanner-switch-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .scanner-camera-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scanner-camera-label {
+    text-align: left;
+  }
+
+  .scanner-camera-select,
+  .scanner-switch-button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+</style>
+
 </head>
 
 
@@ -1860,6 +1907,39 @@ input:focus-visible {
 
 
   <div class="card">
+
+    <div
+      class="scanner-camera-controls"
+      aria-label="Pilihan kamera"
+    >
+      <label
+        for="cameraFacing"
+        class="scanner-camera-label"
+      >
+        📷 Kamera
+      </label>
+
+      <select
+        id="cameraFacing"
+        class="form-input scanner-camera-select"
+        onchange="changeScannerCamera(this.value)"
+      >
+        <option value="environment">
+          Kamera Belakang
+        </option>
+        <option value="user">
+          Kamera Depan
+        </option>
+      </select>
+
+      <button
+        type="button"
+        class="button button-light scanner-switch-button"
+        onclick="toggleScannerCamera()"
+      >
+        🔄 Tukar Kamera
+      </button>
+    </div>
 
     <div id="reader"></div>
 
@@ -6760,7 +6840,160 @@ function scannerContinue() {
 }
 
 
+
+let scannerFacingMode =
+  "environment";
+
+
+function setScannerCameraControl(
+  facingMode
+) {
+
+  scannerFacingMode =
+    facingMode === "user"
+      ? "user"
+      : "environment";
+
+  const select =
+    document.getElementById(
+      "cameraFacing"
+    );
+
+  if (select) {
+    select.value =
+      scannerFacingMode;
+  }
+
+}
+
+
+function changeScannerCamera(
+  facingMode
+) {
+
+  setScannerCameraControl(
+    facingMode
+  );
+
+  if (!scannerRunning) {
+    return;
+  }
+
+  switchScannerCamera(
+    scannerFacingMode
+  );
+
+}
+
+
+function toggleScannerCamera() {
+
+  const next =
+    scannerFacingMode === "environment"
+      ? "user"
+      : "environment";
+
+  setScannerCameraControl(
+    next
+  );
+
+  if (!scannerRunning) {
+    return;
+  }
+
+  switchScannerCamera(
+    next
+  );
+
+}
+
+
+function switchScannerCamera(
+  facingMode
+) {
+
+  if (!scannerRunning) {
+    return;
+  }
+
+  const oldScanner =
+    scanner;
+
+  scannerRunning =
+    false;
+
+  processingScan =
+    true;
+
+  document
+    .getElementById(
+      "scannerStatus"
+    )
+    .innerText =
+    "🔄 Menukar kamera...";
+
+  try {
+
+    oldScanner
+      .stop()
+      .then(
+        function() {
+
+          try {
+            oldScanner.clear();
+          } catch(error) {}
+
+          scanner =
+            null;
+
+          startScanner();
+
+        }
+      )
+      .catch(
+        function(error) {
+
+          console.warn(
+            "Stop kamera gagal:",
+            error
+          );
+
+          try {
+            oldScanner.clear();
+          } catch(error) {}
+
+          scanner =
+            null;
+
+          startScanner();
+
+        }
+      );
+
+  }
+
+  catch(error) {
+
+    console.warn(
+      "Tukar kamera gagal:",
+      error
+    );
+
+    scanner =
+      null;
+
+    startScanner();
+
+  }
+
+}
+
+
 function startScanner() {
+
+  setScannerCameraControl(
+    scannerFacingMode
+  );
 
 
   if (
@@ -6806,7 +7039,7 @@ function startScanner() {
 
     {
       facingMode:
-        "environment"
+        scannerFacingMode
     },
 
     {
@@ -6870,6 +7103,9 @@ function startScanner() {
 
       scannerRunning =
         true;
+
+      processingScan =
+        false;
 
 
       document
@@ -7426,6 +7662,9 @@ function stopScanner() {
 
 
   scannerRunning =
+    false;
+
+  processingScan =
     false;
 
 }
