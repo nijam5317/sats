@@ -1451,11 +1451,11 @@
           <tr>
             <th>Bil</th><th>Murid</th><th>Kelas</th>
             <th>Hari Persekolahan</th><th>Hadir</th><th>Tidak Hadir</th>
-            <th>% Kehadiran</th><th>Status</th>
+            <th>% Kehadiran</th><th>Status</th><th>Tindakan</th>
           </tr>
         </thead>
         <tbody id="riskStudentsBody">
-          <tr><td colspan="8" style="padding:15px;text-align:center;">Belum disemak.</td></tr>
+          <tr><td colspan="9" style="padding:15px;text-align:center;">Belum disemak.</td></tr>
         </tbody>
       </table>
     </div>
@@ -2855,7 +2855,7 @@ function renderIndividualClassAnalysis() {
     tableWrap.style.display = "block";
 
     body.innerHTML =
-      '<tr><td colspan="8" style="padding:15px;text-align:center;">Tiada murid bagi kelas ini.</td></tr>';
+      '<tr><td colspan="9" style="padding:15px;text-align:center;">Tiada murid bagi kelas ini.</td></tr>';
 
     return;
   }
@@ -5187,7 +5187,7 @@ function loadAtRiskStudents() {
   if(!start || !end) { alert("Sila pilih tarikh mula dan tarikh akhir."); return; }
   if(start>end) { alert("Tarikh mula tidak boleh melebihi tarikh akhir."); return; }
 
-  body.innerHTML='<tr><td colspan="8" style="padding:15px;text-align:center;">Menyemak...</td></tr>';
+  body.innerHTML='<tr><td colspan="9" style="padding:15px;text-align:center;">Menyemak...</td></tr>';
 
   callSATS(SATS_API+"?action=getAtRiskStudents"+
     "&startDate="+encodeURIComponent(start)+
@@ -5196,7 +5196,7 @@ function loadAtRiskStudents() {
     "&threshold="+encodeURIComponent(threshold), function(data) {
 
       if(!data || !data.success) {
-        body.innerHTML='<tr><td colspan="8" style="padding:15px;text-align:center;color:#991b1b;">'+
+        body.innerHTML='<tr><td colspan="9" style="padding:15px;text-align:center;color:#991b1b;">'+
           escapeHtml((data&&data.message)||"Gagal mendapatkan senarai.")+"</td></tr>";
         return;
       }
@@ -5206,33 +5206,404 @@ function loadAtRiskStudents() {
 }
 
 function renderAtRiskStudents(data) {
-  const body=document.getElementById("riskStudentsBody");
-  const summary=document.getElementById("riskSummary");
-  const students=Array.isArray(data.students)?data.students:[];
 
-  summary.innerHTML='<div style="padding:10px;border-radius:8px;background:#f3f4f6;">'+
-    "<strong>"+students.length+"</strong> murid di bawah "+Number(data.threshold||0)+
-    "% &nbsp;|&nbsp; Hari Persekolahan: "+Number(data.schoolDays||0)+
-    " &nbsp;|&nbsp; Cuti/Bukan Persekolahan: "+Number(data.nonSchoolingDays||0)+"</div>";
+  const body =
+    document.getElementById("riskStudentsBody");
 
-  if(!students.length) {
-    body.innerHTML='<tr><td colspan="8" style="padding:15px;text-align:center;">✅ Tiada murid di bawah ambang yang dipilih.</td></tr>';
+  const summary =
+    document.getElementById("riskSummary");
+
+  const students =
+    Array.isArray(data.students)
+      ? data.students
+      : [];
+
+  summary.innerHTML =
+    '<div style="padding:10px;border-radius:8px;background:#f3f4f6;">' +
+    "<strong>" + students.length + "</strong> murid di bawah " +
+    Number(data.threshold || 0) + "%" +
+    " &nbsp;|&nbsp; Hari Persekolahan: " +
+    Number(data.schoolDays || 0) +
+    " &nbsp;|&nbsp; Cuti/Bukan Persekolahan: " +
+    Number(data.nonSchoolingDays || 0) +
+    "</div>";
+
+  if (!students.length) {
+
+    body.innerHTML =
+      '<tr><td colspan="9" style="padding:15px;text-align:center;">' +
+      "✅ Tiada murid di bawah ambang yang dipilih." +
+      "</td></tr>";
+
     return;
   }
 
-  body.innerHTML=students.map(function(s,i){
-    return "<tr>"+
-      "<td>"+(i+1)+"</td>"+
-      "<td><strong>"+escapeHtml(s.name)+"</strong><br><small>"+escapeHtml(s.id)+"</small></td>"+
-      "<td>"+escapeHtml(s.className)+"</td>"+
-      "<td>"+Number(s.schoolDays||0)+"</td>"+
-      "<td>"+Number(s.present||0)+"</td>"+
-      "<td>"+Number(s.absent||0)+"</td>"+
-      "<td><strong>"+Number(s.percentage||0)+"%</strong></td>"+
-      "<td>"+(s.level==="Kritikal"?"🔴 Kritikal":"⚠️ Perlu Perhatian")+"</td>"+
-      "</tr>";
-  }).join("");
+  body.innerHTML =
+    students.map(function(student, index) {
+
+      const level =
+        student.level === "Kritikal"
+          ? "🔴 Kritikal"
+          : "⚠️ Perlu Perhatian";
+
+      return (
+        "<tr>" +
+
+        "<td>" +
+        (index + 1) +
+        "</td>" +
+
+        "<td><strong>" +
+        escapeHtml(student.name) +
+        "</strong><br><small>" +
+        escapeHtml(student.id) +
+        "</small></td>" +
+
+        "<td>" +
+        escapeHtml(student.className) +
+        "</td>" +
+
+        "<td>" +
+        Number(student.schoolDays || 0) +
+        "</td>" +
+
+        "<td>" +
+        Number(student.present || 0) +
+        "</td>" +
+
+        "<td>" +
+        Number(student.absent || 0) +
+        "</td>" +
+
+        "<td><strong>" +
+        Number(student.percentage || 0) +
+        "%</strong></td>" +
+
+        "<td>" +
+        level +
+        "</td>" +
+
+        '<td>' +
+        '<button type="button" class="calendar-action-button" ' +
+        'onclick="openAtRiskStudentDetail(\'' +
+        escapeAttribute(String(student.id || "")) +
+        '\')">' +
+        '📋 Lihat' +
+        '</button>' +
+        "</td>" +
+
+        "</tr>"
+      );
+
+    }).join("");
+
 }
+
+
+function openAtRiskStudentDetail(studentId) {
+
+  setRiskDefaultDates();
+
+  const startDate =
+    document.getElementById("riskStartDate").value;
+
+  const endDate =
+    document.getElementById("riskEndDate").value;
+
+  if (!startDate || !endDate) {
+    alert("Sila tetapkan julat tarikh terlebih dahulu.");
+    return;
+  }
+
+  let panel =
+    document.getElementById("riskStudentDetailPanel");
+
+  if (!panel) {
+
+    panel =
+      document.createElement("div");
+
+    panel.id =
+      "riskStudentDetailPanel";
+
+    panel.className =
+      "card";
+
+    panel.style.marginTop =
+      "15px";
+
+    const riskCard =
+      document.getElementById("dashboardRiskCard");
+
+    if (riskCard) {
+      riskCard.appendChild(panel);
+    }
+
+  }
+
+  panel.innerHTML =
+    '<div style="padding:15px;text-align:center;">' +
+    "⏳ Memuatkan analisis murid..." +
+    "</div>";
+
+  callSATS(
+    SATS_API +
+    "?action=getStudentAttendanceDetail" +
+    "&studentId=" +
+    encodeURIComponent(studentId) +
+    "&startDate=" +
+    encodeURIComponent(startDate) +
+    "&endDate=" +
+    encodeURIComponent(endDate),
+
+    function(data) {
+
+      if (!data || !data.success) {
+
+        panel.innerHTML =
+          '<div style="padding:15px;color:#991b1b;">' +
+          escapeHtml(
+            (data && data.message) ||
+            "Gagal mendapatkan analisis murid."
+          ) +
+          "</div>";
+
+        return;
+      }
+
+      renderAtRiskStudentDetail(
+        panel,
+        data
+      );
+
+    }
+  );
+
+}
+
+
+function renderAtRiskStudentDetail(
+  panel,
+  data
+) {
+
+  const student =
+    data.student || {};
+
+  const records =
+    Array.isArray(data.records)
+      ? data.records
+      : [];
+
+  const absentDates =
+    Array.isArray(data.absentDates)
+      ? data.absentDates
+      : [];
+
+  const schoolDays =
+    Number(data.schoolDays || 0);
+
+  const present =
+    Number(data.present || 0);
+
+  const absent =
+    Number(data.absent || 0);
+
+  const percentage =
+    Number(data.percentage || 0);
+
+  panel.innerHTML =
+    '<div class="report-section-header">' +
+      '<div>' +
+        '<div class="report-section-title">📋 Analisis Individu</div>' +
+        '<div class="report-section-subtitle">' +
+          escapeHtml(student.name || "") +
+          " · " +
+          escapeHtml(student.className || "") +
+          " · " +
+          escapeHtml(student.id || "") +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<button type="button" class="print-button" style="margin:0;" ' +
+          'onclick="printAtRiskStudentDetail()">' +
+          '🖨️ CETAK LAPORAN MURID' +
+        '</button>' +
+        '<button type="button" class="calendar-action-button" ' +
+          'onclick="document.getElementById(\'riskStudentDetailPanel\').remove()">' +
+          '✕ Tutup' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="dashboard-grid" style="margin-top:12px;">' +
+
+      '<div class="stat">' +
+        '<div class="stat-label">Hari Persekolahan</div>' +
+        '<div class="stat-number">' + schoolDays + '</div>' +
+      '</div>' +
+
+      '<div class="stat">' +
+        '<div class="stat-label">Hadir</div>' +
+        '<div class="stat-number">' + present + '</div>' +
+      '</div>' +
+
+      '<div class="stat">' +
+        '<div class="stat-label">Tidak Hadir</div>' +
+        '<div class="stat-number">' + absent + '</div>' +
+      '</div>' +
+
+      '<div class="stat">' +
+        '<div class="stat-label">Kehadiran</div>' +
+        '<div class="stat-number">' + percentage + '%</div>' +
+      '</div>' +
+
+    '</div>' +
+
+    '<div style="margin-top:15px;">' +
+      '<strong>Tarikh Tidak Hadir</strong>' +
+      '<div style="margin-top:8px;">' +
+        (
+          absentDates.length
+            ? absentDates.map(function(item) {
+                return (
+                  '<span class="calendar-badge non-schooling" ' +
+                  'style="margin:3px;">' +
+                  escapeHtml(formatCalendarDate(item.date)) +
+                  '</span>'
+                );
+              }).join("")
+            : '<span style="color:#166534;">Tiada rekod tidak hadir.</span>'
+        ) +
+      '</div>' +
+    '</div>' +
+
+    '<div style="overflow-x:auto;margin-top:15px;">' +
+      '<table class="report-table">' +
+        '<thead>' +
+          '<tr><th>Tarikh</th><th>Status</th><th>Masa</th></tr>' +
+        '</thead>' +
+        '<tbody>' +
+          (
+            records.length
+              ? records.map(function(item) {
+                  return (
+                    "<tr>" +
+                    "<td>" + escapeHtml(formatCalendarDate(item.date)) + "</td>" +
+                    "<td>" + escapeHtml(item.status || "") + "</td>" +
+                    "<td>" + escapeHtml(item.time || "") + "</td>" +
+                    "</tr>"
+                  );
+                }).join("")
+              : '<tr><td colspan="3">Tiada rekod.</td></tr>'
+          ) +
+        '</tbody>' +
+      '</table>' +
+    '</div>';
+
+  window.currentAtRiskStudentDetail =
+    data;
+
+}
+
+
+function printAtRiskStudentDetail() {
+
+  const data =
+    window.currentAtRiskStudentDetail;
+
+  if (!data || !data.student) {
+    alert("Sila buka analisis murid dahulu.");
+    return;
+  }
+
+  const student =
+    data.student;
+
+  const records =
+    Array.isArray(data.records)
+      ? data.records
+      : [];
+
+  const rows =
+    records.map(function(item, index) {
+      return (
+        "<tr>" +
+        "<td>" + (index + 1) + "</td>" +
+        "<td>" + escapeHtml(formatCalendarDate(item.date)) + "</td>" +
+        "<td>" + escapeHtml(item.status || "") + "</td>" +
+        "<td>" + escapeHtml(item.time || "") + "</td>" +
+        "</tr>"
+      );
+    }).join("");
+
+  const html =
+    '<div style="font-family:Arial,sans-serif;padding:20px;">' +
+      '<h2 style="margin:0 0 5px;">LAPORAN KEHADIRAN INDIVIDU</h2>' +
+      '<div>' +
+        escapeHtml(student.name || "") +
+        " · " +
+        escapeHtml(student.className || "") +
+        " · " +
+        escapeHtml(student.id || "") +
+      '</div>' +
+      '<div style="margin-top:8px;">' +
+        "Tempoh: " +
+        escapeHtml(formatCalendarDate(data.startDate)) +
+        " – " +
+        escapeHtml(formatCalendarDate(data.endDate)) +
+      '</div>' +
+
+      '<table style="width:100%;border-collapse:collapse;margin-top:15px;">' +
+        '<tr>' +
+          '<th style="border:1px solid #999;padding:8px;">Hari Persekolahan</th>' +
+          '<th style="border:1px solid #999;padding:8px;">Hadir</th>' +
+          '<th style="border:1px solid #999;padding:8px;">Tidak Hadir</th>' +
+          '<th style="border:1px solid #999;padding:8px;">Kehadiran</th>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="border:1px solid #999;padding:8px;text-align:center;">' + Number(data.schoolDays || 0) + '</td>' +
+          '<td style="border:1px solid #999;padding:8px;text-align:center;">' + Number(data.present || 0) + '</td>' +
+          '<td style="border:1px solid #999;padding:8px;text-align:center;">' + Number(data.absent || 0) + '</td>' +
+          '<td style="border:1px solid #999;padding:8px;text-align:center;"><strong>' + Number(data.percentage || 0) + '%</strong></td>' +
+        '</tr>' +
+      '</table>' +
+
+      '<table style="width:100%;border-collapse:collapse;margin-top:15px;">' +
+        '<thead><tr>' +
+          '<th style="border:1px solid #999;padding:7px;">Bil</th>' +
+          '<th style="border:1px solid #999;padding:7px;">Tarikh</th>' +
+          '<th style="border:1px solid #999;padding:7px;">Status</th>' +
+          '<th style="border:1px solid #999;padding:7px;">Masa</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+    '</div>';
+
+  const printWindow =
+    window.open("", "_blank");
+
+  if (!printWindow) {
+    alert("Sila benarkan pop-up untuk mencetak laporan.");
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(
+    "<html><head><title>Laporan Kehadiran Individu</title></head><body>" +
+    html +
+    "</body></html>"
+  );
+  printWindow.document.close();
+
+  printWindow.focus();
+
+  setTimeout(function() {
+    printWindow.print();
+  }, 300);
+
+}
+
 
 /* =================================================
    SCANNER
