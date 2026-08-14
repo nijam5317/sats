@@ -1136,6 +1136,374 @@
 
 </style>
 
+
+<style id="sats-teal-navy-theme">
+/* =========================================================
+   SATS UI THEME — TEAL + NAVY
+   Visual-only layer. Backend/functions are unchanged.
+   ========================================================= */
+
+:root {
+  --sats-navy: #0f2747;
+  --sats-navy-2: #173b63;
+  --sats-teal: #0f8b8d;
+  --sats-teal-dark: #087274;
+  --sats-teal-soft: #e7f7f6;
+  --sats-bg: #f3f8f8;
+  --sats-card: #ffffff;
+  --sats-text: #183047;
+  --sats-muted: #6b7c8f;
+  --sats-border: #d9e6e7;
+  --sats-shadow: 0 8px 24px rgba(15,39,71,.08);
+  --sats-radius: 16px;
+}
+
+/* Overall */
+body {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(15,139,141,.07), transparent 28%),
+    linear-gradient(180deg, #f7fbfb 0%, var(--sats-bg) 100%);
+  color: var(--sats-text);
+}
+
+/* Header */
+.topbar {
+  background:
+    linear-gradient(135deg, var(--sats-navy) 0%, var(--sats-navy-2) 72%, var(--sats-teal-dark) 100%);
+  color: #fff;
+  padding: 13px 22px;
+  box-shadow: 0 5px 20px rgba(15,39,71,.18);
+}
+
+.school-name {
+  color: #fff;
+  letter-spacing: .1px;
+}
+
+.system-name {
+  color: rgba(255,255,255,.75);
+}
+
+/* Navigation */
+.nav {
+  background: rgba(255,255,255,.97);
+  border-bottom: 1px solid var(--sats-border);
+  box-shadow: 0 2px 10px rgba(15,39,71,.05);
+  scrollbar-width: thin;
+}
+
+.nav button {
+  color: #5e7185;
+  padding: 13px 17px;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  transition: .18s ease;
+}
+
+.nav button:hover {
+  color: var(--sats-navy);
+  background: var(--sats-teal-soft);
+}
+
+.nav button.active {
+  color: var(--sats-teal-dark);
+  border-bottom-color: var(--sats-teal);
+  background: linear-gradient(180deg, #fff 0%, var(--sats-teal-soft) 100%);
+}
+
+/* Page headings */
+.page-title {
+  color: var(--sats-navy);
+  letter-spacing: -.3px;
+}
+
+.page-subtitle {
+  color: var(--sats-muted);
+}
+
+/* Cards */
+.card,
+.stat {
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(217,230,231,.8);
+  border-radius: var(--sats-radius);
+  box-shadow: var(--sats-shadow);
+}
+
+.card:hover,
+.stat:hover {
+  border-color: #c9dfe0;
+}
+
+/* Dashboard stats */
+.stat-label {
+  color: var(--sats-muted);
+}
+
+.stat-number {
+  color: var(--sats-navy);
+}
+
+/* Scanner */
+#reader {
+  border: 4px solid rgba(15,139,141,.18);
+  box-shadow: 0 10px 30px rgba(15,39,71,.10);
+  background: #fff;
+}
+
+.scanner-status {
+  color: var(--sats-muted);
+}
+
+.student-name {
+  color: var(--sats-navy);
+}
+
+.student-class,
+.student-id,
+.datetime {
+  color: var(--sats-muted);
+}
+
+.attendance-status.success,
+.success {
+  background: #e2f7ee;
+  color: #08704f;
+  border: 1px solid #bfe8d7;
+}
+
+.attendance-status.warning,
+.warning {
+  background: #fff6d9;
+  color: #8a5b00;
+  border: 1px solid #f2df9e;
+}
+
+.attendance-status.error,
+.error {
+  background: #ffebeb;
+  color: #a12a2a;
+  border: 1px solid #f2caca;
+}
+
+/* Forms */
+.form-input {
+  border: 1px solid #cbdcde;
+  background: #fff;
+  color: var(--sats-text);
+}
+
+.form-input:hover {
+  border-color: #a9c6c8;
+}
+
+.form-input:focus {
+  border-color: var(--sats-teal);
+  box-shadow: 0 0 0 3px rgba(15,139,141,.12);
+}
+
+/* Main buttons */
+.button-dark,
+.print-button {
+  background: linear-gradient(135deg, var(--sats-navy), var(--sats-navy-2));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(15,39,71,.16);
+}
+
+.button-dark:hover,
+.print-button:hover {
+  background: linear-gradient(135deg, #173b63, var(--sats-teal-dark));
+  transform: translateY(-1px);
+}
+
+.button-light {
+  background: #eaf2f3;
+  color: var(--sats-navy);
+}
+
+.button-light:hover {
+  background: #dcebec;
+}
+
+/* Student cards */
+.student-card {
+  border-color: var(--sats-border);
+  background: #fff;
+  transition: .16s ease;
+}
+
+.student-card:hover {
+  border-color: #b8d5d6;
+  box-shadow: 0 4px 14px rgba(15,39,71,.07);
+}
+
+.student-card-name {
+  color: var(--sats-navy);
+}
+
+.student-card-info {
+  color: var(--sats-muted);
+}
+
+.delete-button {
+  background: #edf3f4;
+  color: #496071;
+}
+
+.delete-button:hover {
+  background: #ffe8e8;
+  color: #9b2c2c;
+}
+
+.edit-student-panel {
+  border-color: var(--sats-border);
+  background: #f7fbfb;
+}
+
+.edit-button.primary {
+  background: var(--sats-teal);
+}
+
+.edit-button.primary:hover {
+  background: var(--sats-teal-dark);
+}
+
+/* Tables */
+.report-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.report-table thead th {
+  background: var(--sats-navy) !important;
+  color: #fff !important;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background: #f7fbfb;
+}
+
+.report-table tbody tr:hover {
+  background: var(--sats-teal-soft);
+}
+
+/* Calendar / action buttons */
+.calendar-action-button {
+  border: 1px solid #c9dfe0 !important;
+  background: #edf7f7 !important;
+  color: var(--sats-navy) !important;
+}
+
+.calendar-action-button:hover {
+  background: #d9eeee !important;
+}
+
+.calendar-action-button.delete {
+  background: #fff0f0 !important;
+  color: #9b2c2c !important;
+  border-color: #f0caca !important;
+}
+
+/* Risk emphasis */
+#riskSummary strong {
+  color: var(--sats-teal-dark);
+}
+
+/* Scanner auto-toast */
+#satsScannerToast {
+  border: 1px solid rgba(255,255,255,.65);
+  box-shadow: 0 12px 35px rgba(15,39,71,.20) !important;
+}
+
+/* Subtle focus accessibility */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(15,139,141,.22);
+  outline-offset: 2px;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .topbar {
+    padding: 11px 14px;
+  }
+
+  .school-name {
+    font-size: 19px;
+  }
+
+  .system-name {
+    font-size: 12px;
+  }
+
+  .nav button {
+    padding: 11px 13px;
+    font-size: 13px;
+  }
+
+  .page {
+    padding: 18px 12px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .card,
+  .stat {
+    border-radius: 14px;
+    padding: 16px;
+  }
+}
+</style>
+
+
+<style id="sats-red-menu">
+/* Menu theme — Red */
+.nav {
+  border-bottom-color: #ead1d1;
+}
+
+.nav button {
+  color: #6f6262;
+}
+
+.nav button:hover {
+  background: #fff1f1;
+  color: #9f1239;
+}
+
+.nav button.active {
+  color: #991b1b;
+  border-bottom-color: #dc2626;
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f1 100%);
+}
+</style>
+
+
+<style id="sats-clean-menu-icons">
+.nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  letter-spacing: .05px;
+}
+
+.nav button::first-letter {
+  font-size: 18px;
+}
+
+@media (max-width: 700px) {
+  .nav button {
+    gap: 5px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+</style>
+
 </head>
 
 
@@ -1186,7 +1554,7 @@
     class="active"
     onclick="showPage('dashboard')"
   >
-    🏠 Utama
+    ⌂ Utama
   </button>
 
 
@@ -1194,14 +1562,14 @@
     id="navScanner"
     onclick="showPage('scanner')"
   >
-    📷 Scan
+    ▣ Scan
   </button>
 
   <button
     id="navManual"
     onclick="showPage('manual')"
   >
-    ✍️ Manual
+    ✎ Manual
   </button>
 
 
@@ -1209,7 +1577,7 @@
     id="navStudents"
     onclick="showPage('students')"
   >
-    👨‍🎓 Data Murid
+    ♙ Data Murid
   </button>
 
 
@@ -1217,20 +1585,20 @@
     id="navReports"
     onclick="showPage('reports')"
   >
-    📊 Laporan
+    ▤ Laporan
   </button>
   <button
     id="navCalendar"
     onclick="showPage('calendar')"
   >
-    📅 Kalendar Sekolah
+    ▦ Kalendar Sekolah
   </button>
 
 <button
     id="navSettings"
     onclick="showPage('settings')"
   >
-    ⚙️ Tetapan
+    ⚙ Tetapan
   </button>
 
 </div>
