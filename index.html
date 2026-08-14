@@ -1396,6 +1396,67 @@
 </section>
 
 
+
+  <div id="dashboardRiskCard" class="card" style="margin-top:15px;">
+    <div class="report-section-header">
+      <div>
+        <div class="report-section-title">🚨 Murid Berisiko</div>
+        <div class="report-section-subtitle">
+          Murid dengan peratus kehadiran di bawah ambang yang dipilih.
+        </div>
+      </div>
+    </div>
+
+    <div class="report-filter-grid">
+      <div>
+        <label>Tarikh Mula</label>
+        <input id="riskStartDate" type="date" class="form-input">
+      </div>
+      <div>
+        <label>Tarikh Akhir</label>
+        <input id="riskEndDate" type="date" class="form-input">
+      </div>
+      <div>
+        <label>Kelas</label>
+        <select id="riskClass" class="form-input">
+          <option value="">Semua Kelas</option>
+        </select>
+      </div>
+      <div>
+        <label>Ambang Kehadiran</label>
+        <select id="riskThreshold" class="form-input">
+          <option value="90">Bawah 90%</option>
+          <option value="80" selected>Bawah 80%</option>
+          <option value="70">Bawah 70%</option>
+          <option value="60">Bawah 60%</option>
+          <option value="50">Bawah 50%</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="button" class="print-button" style="margin-top:10px;"
+      onclick="loadAtRiskStudents()">
+      🚨 SEMAK MURID BERISIKO
+    </button>
+
+    <div id="riskSummary" style="margin-top:12px;"></div>
+
+    <div style="overflow-x:auto;margin-top:12px;">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Bil</th><th>Murid</th><th>Kelas</th>
+            <th>Hari Persekolahan</th><th>Hadir</th><th>Tidak Hadir</th>
+            <th>% Kehadiran</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="riskStudentsBody">
+          <tr><td colspan="8" style="padding:15px;text-align:center;">Belum disemak.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 <!-- =================================================
      SCANNER
      ================================================= -->
@@ -5055,6 +5116,94 @@ function deleteStudentFromApp(
 }
 
 
+
+/* =================================================
+   MURID BERISIKO
+   ================================================= */
+
+function setRiskDefaultDates() {
+  const d=document.getElementById("dashboardDate");
+  const today=(d && d.value) || getDashboardTodayDate();
+  const end=document.getElementById("riskEndDate");
+  const start=document.getElementById("riskStartDate");
+  if(end && !end.value) end.value=today;
+  if(start && !start.value) {
+    const x=new Date(today+"T00:00:00");
+    x.setDate(x.getDate()-29);
+    start.value=x.toISOString().slice(0,10);
+  }
+}
+
+function populateRiskClasses(classes) {
+  const s=document.getElementById("riskClass");
+  if(!s) return;
+  const current=s.value;
+  const values=Array.isArray(classes)?classes:[];
+  s.innerHTML='<option value="">Semua Kelas</option>'+values.map(function(c){
+    return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>';
+  }).join("");
+  if(current && values.indexOf(current)>=0) s.value=current;
+}
+
+function loadAtRiskStudents() {
+  setRiskDefaultDates();
+  const start=document.getElementById("riskStartDate").value;
+  const end=document.getElementById("riskEndDate").value;
+  const cls=document.getElementById("riskClass").value;
+  const threshold=document.getElementById("riskThreshold").value;
+  const body=document.getElementById("riskStudentsBody");
+  const summary=document.getElementById("riskSummary");
+
+  if(!start || !end) { alert("Sila pilih tarikh mula dan tarikh akhir."); return; }
+  if(start>end) { alert("Tarikh mula tidak boleh melebihi tarikh akhir."); return; }
+
+  body.innerHTML='<tr><td colspan="8" style="padding:15px;text-align:center;">Menyemak...</td></tr>';
+
+  callSATS(SATS_API+"?action=getAtRiskStudents"+
+    "&startDate="+encodeURIComponent(start)+
+    "&endDate="+encodeURIComponent(end)+
+    "&className="+encodeURIComponent(cls)+
+    "&threshold="+encodeURIComponent(threshold), function(data) {
+
+      if(!data || !data.success) {
+        body.innerHTML='<tr><td colspan="8" style="padding:15px;text-align:center;color:#991b1b;">'+
+          escapeHtml((data&&data.message)||"Gagal mendapatkan senarai.")+"</td></tr>";
+        return;
+      }
+      populateRiskClasses(data.allClasses||[]);
+      renderAtRiskStudents(data);
+    });
+}
+
+function renderAtRiskStudents(data) {
+  const body=document.getElementById("riskStudentsBody");
+  const summary=document.getElementById("riskSummary");
+  const students=Array.isArray(data.students)?data.students:[];
+
+  summary.innerHTML='<div style="padding:10px;border-radius:8px;background:#f3f4f6;">'+
+    "<strong>"+students.length+"</strong> murid di bawah "+Number(data.threshold||0)+
+    "% &nbsp;|&nbsp; Hari Persekolahan: "+Number(data.schoolDays||0)+
+    " &nbsp;|&nbsp; Cuti/Bukan Persekolahan: "+Number(data.nonSchoolingDays||0)+"</div>";
+
+  if(!students.length) {
+    body.innerHTML='<tr><td colspan="8" style="padding:15px;text-align:center;">✅ Tiada murid di bawah ambang yang dipilih.</td></tr>';
+    return;
+  }
+
+  body.innerHTML=students.map(function(s,i){
+    return "<tr>"+
+      "<td>"+(i+1)+"</td>"+
+      "<td><strong>"+escapeHtml(s.name)+"</strong><br><small>"+escapeHtml(s.id)+"</small></td>"+
+      "<td>"+escapeHtml(s.className)+"</td>"+
+      "<td>"+Number(s.schoolDays||0)+"</td>"+
+      "<td>"+Number(s.present||0)+"</td>"+
+      "<td>"+Number(s.absent||0)+"</td>"+
+      "<td><strong>"+Number(s.percentage||0)+"%</strong></td>"+
+      "<td>"+(s.level==="Kritikal"?"🔴 Kritikal":"⚠️ Perlu Perhatian")+"</td>"+
+      "</tr>";
+  }).join("");
+}
+
 /* =================================================
    SCANNER
    ================================================= */
@@ -5728,6 +5877,8 @@ function getDashboardTodayDate() {
 
 function loadDashboard() {
 
+  setRiskDefaultDates();
+
   const dateInput =
     document.getElementById(
       "dashboardDate"
@@ -5853,6 +6004,10 @@ function loadDashboard() {
       );
 
       populateDashboardClasses(
+        data.allClasses || []
+      );
+
+      populateRiskClasses(
         data.allClasses || []
       );
 
