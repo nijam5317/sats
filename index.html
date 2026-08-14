@@ -4912,6 +4912,8 @@ function bootSATS(
   satsClassesReady =
     false;
 
+  // Do NOT load all students during startup.
+  // Students are loaded only when the relevant page needs them.
   satsStudentsReady =
     false;
 
@@ -4928,16 +4930,10 @@ function bootSATS(
   let classesDone =
     false;
 
-  let studentsDone =
-    false;
-
   let settingsOK =
     false;
 
   let classesOK =
-    false;
-
-  let studentsOK =
     false;
 
 
@@ -4946,8 +4942,7 @@ function bootSATS(
 
       if (
         !settingsDone ||
-        !classesDone ||
-        !studentsDone
+        !classesDone
       ) {
         return;
       }
@@ -4957,8 +4952,7 @@ function bootSATS(
 
       if (
         settingsOK &&
-        classesOK &&
-        studentsOK
+        classesOK
       ) {
 
         satsConnected =
@@ -4970,9 +4964,12 @@ function bootSATS(
 
       } else {
 
+        satsConnected =
+          false;
+
         setSATSConnectionStatus(
           "error",
-          "Sebahagian data SATS tidak dapat dimuatkan."
+          "Tetapan atau senarai kelas SATS tidak dapat dimuatkan."
         );
 
       }
@@ -4980,6 +4977,7 @@ function bootSATS(
     };
 
 
+  // Load school settings first.
   callSATS(
     SATS_API +
     "?action=getSettings",
@@ -5011,6 +5009,7 @@ function bootSATS(
   );
 
 
+  // Load only the class list during startup.
   callSATS(
     SATS_API +
     "?action=getClasses",
@@ -5046,22 +5045,109 @@ function bootSATS(
     }
   );
 
+}
+
+
+
+function showStudentsLoadingState() {
+
+  const candidates = [
+    "studentsStatus",
+    "studentStatus",
+    "dataMuridStatus"
+  ];
+
+  candidates.forEach(
+    function(id) {
+
+      const node =
+        document.getElementById(id);
+
+      if (node) {
+        node.innerText =
+          "⏳ Memuatkan data murid...";
+      }
+
+    }
+  );
+
+}
+
+function ensureStudentsLoaded(
+  done
+) {
+
+  if (
+    satsStudentsReady &&
+    Array.isArray(allStudents)
+  ) {
+
+    if (
+      typeof done ===
+      "function"
+    ) {
+      done(
+        allStudents
+      );
+    }
+
+    return;
+  }
+
+
+  // Prevent duplicate student requests.
+  if (
+    window.satsStudentsLoading
+  ) {
+
+    window.satsStudentsWaiters =
+      window.satsStudentsWaiters ||
+      [];
+
+    if (
+      typeof done ===
+      "function"
+    ) {
+      window.satsStudentsWaiters.push(
+        done
+      );
+    }
+
+    return;
+
+  }
+
+
+  window.satsStudentsLoading =
+    true;
+
+  showStudentsLoadingState();
+
+  window.satsStudentsWaiters =
+    [];
+
+  if (
+    typeof done ===
+    "function"
+  ) {
+    window.satsStudentsWaiters.push(
+      done
+    );
+  }
+
 
   callSATS(
     SATS_API +
     "?action=getStudents",
     function(data) {
 
-      studentsDone =
-        true;
+      window.satsStudentsLoading =
+        false;
 
       if (
         data &&
         data.success
       ) {
-
-        studentsOK =
-          true;
 
         allStudents =
           Array.isArray(
@@ -5077,7 +5163,39 @@ function bootSATS(
 
       }
 
-      complete();
+
+      const waiters =
+        window.satsStudentsWaiters ||
+        [];
+
+      window.satsStudentsWaiters =
+        [];
+
+
+      waiters.forEach(
+        function(waiter) {
+
+          try {
+
+            waiter(
+              satsStudentsReady
+                ? allStudents
+                : []
+            );
+
+          }
+
+          catch(error) {
+
+            console.warn(
+              "Student waiter error:",
+              error
+            );
+
+          }
+
+        }
+      );
 
     }
   );
@@ -5115,6 +5233,16 @@ function populateAllClassSelectors() {
 
 
 function renderStudentDataFromCache() {
+  if (!satsStudentsReady) {
+    ensureStudentsLoaded(
+      function() {
+        renderStudentDataFromCache();
+      }
+    );
+    return;
+  }
+
+
 
   try {
 
