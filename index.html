@@ -1128,6 +1128,12 @@
     @media (max-width:850px) { .calendar-toolbar { grid-template-columns:1fr 1fr; } }
     @media (max-width:560px) { .calendar-toolbar { grid-template-columns:1fr; } }
 
+
+    /* Keep every module page hidden unless it is the active page. */
+    .page:not(.active) {
+      display: none !important;
+    }
+
 </style>
 
 </head>
@@ -1393,11 +1399,9 @@
 
   </div>
 
-</section>
 
 
-
-  <div id="dashboardRiskCard" class="card" style="margin-top:15px;">
+<div id="dashboardRiskCard" class="card" style="margin-top:15px;">
     <div class="report-section-header">
       <div>
         <div class="report-section-title">🚨 Murid Berisiko</div>
@@ -1456,6 +1460,11 @@
       </table>
     </div>
   </div>
+</section>
+
+
+
+  
 
 <!-- =================================================
      SCANNER
