@@ -5286,7 +5286,7 @@ function renderAtRiskStudents(data) {
         '<td>' +
         '<button type="button" class="calendar-action-button" ' +
         'onclick="openAtRiskStudentDetail(\'' +
-        escapeAttribute(String(student.id || "")) +
+        encodeURIComponent(String(student.id || "")) +
         '\')">' +
         '📋 Lihat' +
         '</button>' +
@@ -5301,6 +5301,10 @@ function renderAtRiskStudents(data) {
 
 
 function openAtRiskStudentDetail(studentId) {
+
+  try {
+    studentId = decodeURIComponent(studentId);
+  } catch (e) {}
 
   setRiskDefaultDates();
 
