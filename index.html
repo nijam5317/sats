@@ -6185,6 +6185,213 @@ function printAtRiskStudentDetail() {
    SCANNER
    ================================================= */
 
+
+/* =================================================
+   SCANNER AUTO-CONTINUE
+   ================================================= */
+
+let scannerToastTimer = null;
+let lastScannedStudentId = "";
+let lastScannedAt = 0;
+
+function showScannerToast(message, type) {
+
+  let toast =
+    document.getElementById("satsScannerToast");
+
+  if (!toast) {
+
+    toast =
+      document.createElement("div");
+
+    toast.id =
+      "satsScannerToast";
+
+    toast.style.cssText =
+      "position:fixed;left:50%;top:18%;transform:translate(-50%,-50%);" +
+      "z-index:99999;min-width:280px;max-width:90vw;" +
+      "padding:14px 18px;border-radius:12px;" +
+      "font-size:18px;font-weight:700;text-align:center;" +
+      "box-shadow:0 8px 30px rgba(0,0,0,.18);" +
+      "pointer-events:none;transition:opacity .2s ease;";
+
+    document.body.appendChild(toast);
+
+  }
+
+  toast.textContent =
+    message;
+
+  toast.style.background =
+    type === "error"
+      ? "#fee2e2"
+      : "#dcfce7";
+
+  toast.style.color =
+    type === "error"
+      ? "#991b1b"
+      : "#166534";
+
+  toast.style.opacity =
+    "1";
+
+  clearTimeout(
+    scannerToastTimer
+  );
+
+  scannerToastTimer =
+    setTimeout(function() {
+
+      toast.style.opacity =
+        "0";
+
+    }, 1200);
+
+}
+
+
+function scannerPlaySuccessBeep() {
+
+  try {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    if (!AudioContext) return;
+
+    const context =
+      new AudioContext();
+
+    const oscillator =
+      context.createOscillator();
+
+    const gain =
+      context.createGain();
+
+    oscillator.frequency.value =
+      880;
+
+    oscillator.type =
+      "sine";
+
+    gain.gain.value =
+      0.06;
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    oscillator.start();
+
+    setTimeout(function() {
+
+      oscillator.stop();
+
+      if (
+        context.state !==
+        "closed"
+      ) {
+        context.close();
+      }
+
+    }, 100);
+
+  } catch (error) {
+    /* Audio is optional. */
+  }
+
+}
+
+
+function scannerCanProcess(studentId) {
+
+  const now =
+    Date.now();
+
+  /*
+   * Prevent the same QR from being recorded repeatedly
+   * while the QR is still in front of the camera.
+   */
+  if (
+    studentId &&
+    studentId ===
+    lastScannedStudentId &&
+    now - lastScannedAt < 2500
+  ) {
+    return false;
+  }
+
+  lastScannedStudentId =
+    studentId || "";
+
+  lastScannedAt =
+    now;
+
+  return true;
+
+}
+
+
+function scannerContinue() {
+
+  /*
+   * The existing scanner pauses after detecting a QR
+   * while SATS processes the request. Resume the same
+   * camera instance instead of stopping/restarting it.
+   */
+  setTimeout(function() {
+
+    processingScan = false;
+
+    try {
+
+      if (
+        scanner &&
+        typeof scanner.resume ===
+        "function"
+      ) {
+
+        scanner.resume();
+
+        document
+          .getElementById("scannerStatus")
+          .innerText =
+          "📷 Kamera sedia. Sila imbas QR seterusnya.";
+
+        return;
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "Gagal resume scanner:",
+        error
+      );
+
+    }
+
+    /*
+     * Fallback only if the scanner instance no longer
+     * exists.
+     */
+    try {
+
+      if (
+        typeof startScanner ===
+        "function" &&
+        !scannerRunning
+      ) {
+        startScanner();
+      }
+
+    } catch (error) {}
+
+  }, 250);
+
+}
+
+
 function startScanner() {
 
 
@@ -6445,6 +6652,17 @@ function displayScanResult(
       )
       .innerText =
       "Kehadiran berjaya direkodkan.";
+      scannerPlaySuccessBeep();
+
+      showScannerToast(
+        "✓ " +
+        ((data.student && data.student.name) || "Kehadiran berjaya"),
+        "success"
+      );
+
+      scannerContinue();
+
+
 
 
     return;
@@ -6485,6 +6703,15 @@ function displayScanResult(
       )
       .innerText =
       "Murid ini sudah mempunyai rekod hari ini.";
+      showScannerToast(
+        "⚠ " +
+        ((data.student && data.student.name) || "Sudah direkod"),
+        "success"
+      );
+
+      scannerContinue();
+
+
 
 
     return;
@@ -6541,6 +6768,14 @@ function displayScanResult(
       )
       .innerText =
       "QR tidak terdapat dalam Data Murid.";
+      showScannerToast(
+        "✕ QR tidak sah",
+        "error"
+      );
+
+      scannerContinue();
+
+
 
 
     return;
@@ -6567,6 +6802,14 @@ function displayScanResult(
     )
     .innerText =
     "Ralat berlaku.";
+
+  showScannerToast(
+    "✕ " +
+    (data.message || "Ralat sistem SATS."),
+    "error"
+  );
+
+  scannerContinue();
 
 }
 
