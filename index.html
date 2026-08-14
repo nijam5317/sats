@@ -2910,7 +2910,13 @@ function prepareReportAnalysisPage() {
 
   }
 
-  populateReportClasses();
+  if (!allClasses.length) {
+    loadClasses(function() {
+      populateReportClasses();
+    });
+  } else {
+    populateReportClasses();
+  }
 }
 
 
@@ -4556,60 +4562,110 @@ function deleteSchoolCalendarEntry(rowNumber) {
 
 function callSATS(
   url,
-  callback
+  callback,
+  attempt
 ) {
 
+  attempt =
+    Number(attempt || 0);
 
   const callbackName =
     "satsCallback_" +
     Date.now() +
     "_" +
     Math.floor(
-      Math.random() * 10000
+      Math.random() * 1000000
     );
 
-
-  window[callbackName] =
-    function(data) {
-
-      try {
-
-        callback(data);
-
-      }
-
-      finally {
-
-        delete window[
-          callbackName
-        ];
-
-      }
-
-    };
-
+  let finished = false;
 
   const script =
     document.createElement(
       "script"
     );
 
+  const cleanup =
+    function() {
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(
+          script
+        );
+      }
+
+      try {
+        delete window[callbackName];
+      } catch(error) {}
+
+    };
+
+  const finish =
+    function(data) {
+
+      if (finished) return;
+
+      finished = true;
+
+      clearTimeout(
+        timeoutId
+      );
+
+      cleanup();
+
+      callback(
+        data
+      );
+
+    };
+
+  window[callbackName] =
+    function(data) {
+      finish(data);
+    };
 
   script.src =
     url +
-    "&callback=" +
+    (url.indexOf("?") >= 0 ? "&" : "?") +
+    "callback=" +
     callbackName;
 
+  script.async =
+    true;
 
   script.onerror =
     function() {
 
-      delete window[
-        callbackName
-      ];
+      if (
+        !finished &&
+        attempt < 2
+      ) {
 
+        finished = true;
 
-      callback({
+        clearTimeout(
+          timeoutId
+        );
+
+        cleanup();
+
+        setTimeout(
+          function() {
+
+            callSATS(
+              url,
+              callback,
+              attempt + 1
+            );
+
+          },
+          500 * (attempt + 1)
+        );
+
+        return;
+
+      }
+
+      finish({
 
         success: false,
 
@@ -4617,16 +4673,60 @@ function callSATS(
           "connection",
 
         message:
-          "Ralat sambungan ke SATS."
+          "Ralat sambungan ke SATS. Sila semak internet dan cuba lagi."
 
       });
 
     };
 
-
   document.body.appendChild(
     script
   );
+
+  const timeoutId =
+    setTimeout(
+      function() {
+
+        if (finished) return;
+
+        if (attempt < 2) {
+
+          finished = true;
+
+          cleanup();
+
+          setTimeout(
+            function() {
+
+              callSATS(
+                url,
+                callback,
+                attempt + 1
+              );
+
+            },
+            500 * (attempt + 1)
+          );
+
+          return;
+
+        }
+
+        finish({
+
+          success: false,
+
+          type:
+            "connection",
+
+          message:
+            "SATS mengambil masa terlalu lama untuk memberi respons."
+
+        });
+
+      },
+      12000
+    );
 
 }
 
@@ -4635,7 +4735,9 @@ function callSATS(
    LOAD CLASSES
    ================================================= */
 
-function loadClasses() {
+function loadClasses(
+  done
+) {
 
   const addSelect = document.getElementById("studentClassInput");
   const filterSelect = document.getElementById("studentClassFilter");
@@ -4648,6 +4750,9 @@ function loadClasses() {
 
     if (!data || !data.success) {
       console.warn("Kelas tidak dapat dimuat:", data && data.message);
+      if (typeof done === "function") {
+        done([]);
+      }
       return;
     }
 
@@ -4690,6 +4795,10 @@ function loadClasses() {
           escapeHtml(className) +
           '</option>';
       }).join("");
+
+    if (typeof done === "function") {
+      done(allClasses);
+    }
 
   });
 }
@@ -4881,6 +4990,20 @@ function prepareManualAttendancePage() {
   ) {
     date.value =
       getTodayDateInput();
+  }
+
+  if (!allClasses.length) {
+
+    populateManualClasses();
+
+    loadClasses(
+      function() {
+        populateManualClasses();
+      }
+    );
+
+    return;
+
   }
 
   populateManualClasses();
@@ -8167,8 +8290,9 @@ document.addEventListener(
   "DOMContentLoaded",
   function() {
 
-    loadDashboard();
+    loadSchoolSettings();
     loadClasses();
+    loadDashboard();
 
   }
 );
@@ -8191,6 +8315,17 @@ function loadSchoolSettings() {
         "Tetapan tidak dapat dimuat:",
         data && data.message
       );
+
+      const nameInput =
+        document.getElementById(
+          "schoolNameSetting"
+        );
+
+      if (nameInput) {
+        nameInput.placeholder =
+          "Tidak dapat menyambung ke SATS";
+      }
+
       return;
     }
 
