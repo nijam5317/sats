@@ -9711,17 +9711,14 @@ function addClassSetting() {
 }
 
 
-function deleteClassSetting(
-  className
-) {
+function deleteClassSetting(className) {
 
-  if (
-    !confirm(
-      "Padam kelas " +
-      className +
-      "?"
-    )
-  ) {
+  if (!confirm(
+    "PADAM KELAS\n\n" +
+    "Kelas: " + className + "\n\n" +
+    "Semua murid dalam kelas ini juga akan dipadam.\n\n" +
+    "Adakah anda pasti?"
+  )) {
     return;
   }
 
@@ -9733,28 +9730,55 @@ function deleteClassSetting(
 
   callSATS(url, function(data) {
 
+    console.log("DELETE CLASS:", data);
+
     if (!data || !data.success) {
+
       alert(
-        (data && data.message) ||
-        "Gagal memadam kelas."
+        "❌ Gagal memadam kelas.\n\n" +
+        (
+          data && data.message
+            ? data.message
+            : "Ralat tidak diketahui."
+        )
       );
+
       return;
     }
 
+    /*
+     * Backend sudah berjaya.
+     * Gunakan terus senarai kelas yang
+     * dipulangkan oleh backend.
+     */
+    const updatedClasses =
+      Array.isArray(data.classes)
+        ? data.classes
+        : [];
+
+    /*
+     * Update paparan Tetapan.
+     */
     renderSettingsClasses(
-      data.classes || []
+      updatedClasses
     );
 
-    loadClasses();
+    /*
+     * Update semua dropdown kelas.
+     */
+    populateAllClassSelectors();
+
+    /*
+     * Refresh data murid.
+     */
     loadStudents();
+
+    alert(
+      "✅ Kelas " +
+      className +
+      " berjaya dipadam.\n\n" +
+      "Murid dalam kelas tersebut juga telah dipadam."
+    );
 
   });
 }
-
-
-</script>
-
-
-</body>
-
-</html>
