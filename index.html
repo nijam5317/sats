@@ -9711,7 +9711,9 @@ function addClassSetting() {
 }
 
 
-function deleteClassSetting(className) {
+function deleteClassSetting(
+  className
+) {
 
   if (!confirm(
     "PADAM KELAS\n\n" +
@@ -9730,7 +9732,10 @@ function deleteClassSetting(className) {
 
   callSATS(url, function(data) {
 
-    console.log("DELETE CLASS:", data);
+    console.log(
+      "SATS DELETE CLASS RESPONSE:",
+      data
+    );
 
     if (!data || !data.success) {
 
@@ -9746,32 +9751,33 @@ function deleteClassSetting(className) {
       return;
     }
 
-    /*
-     * Backend sudah berjaya.
-     * Gunakan terus senarai kelas yang
-     * dipulangkan oleh backend.
-     */
     const updatedClasses =
       Array.isArray(data.classes)
         ? data.classes
         : [];
 
-    /*
-     * Update paparan Tetapan.
-     */
+    allClasses =
+      updatedClasses.slice();
+
+    satsClassesReady =
+      true;
+
+    satsStudentsReady =
+      false;
+
+    allStudents = [];
+
     renderSettingsClasses(
       updatedClasses
     );
 
-    /*
-     * Update semua dropdown kelas.
-     */
     populateAllClassSelectors();
 
-    /*
-     * Refresh data murid.
-     */
-    loadStudents();
+    ensureStudentsLoaded(
+      function() {
+        renderStudentDataFromCache();
+      }
+    );
 
     alert(
       "✅ Kelas " +
@@ -9782,3 +9788,9 @@ function deleteClassSetting(className) {
 
   });
 }
+</script>
+
+
+</body>
+
+</html>
