@@ -9715,10 +9715,18 @@ function deleteClassSetting(
   className
 ) {
 
+  className = String(className || "").trim();
+
+  if (!className) {
+    alert("Nama kelas tidak sah.");
+    return;
+  }
+
   if (!confirm(
     "PADAM KELAS\n\n" +
     "Kelas: " + className + "\n\n" +
-    "Semua murid dalam kelas ini juga akan dipadam.\n\n" +
+    "SEMUA MURID dalam kelas ini juga akan dipadam.\n\n" +
+    "Rekod kehadiran lama tidak akan dipadam.\n\n" +
     "Adakah anda pasti?"
   )) {
     return;
@@ -9730,52 +9738,73 @@ function deleteClassSetting(
     "&className=" +
     encodeURIComponent(className);
 
+  console.log("SATS: memadam kelas", className);
+
   callSATS(url, function(data) {
 
-    console.log(
-      "SATS DELETE CLASS RESPONSE:",
-      data
-    );
+    console.log("SATS: respons deleteClass", data);
 
-    if (!data || !data.success) {
-
+    if (!data || data.success !== true) {
       alert(
         "❌ Gagal memadam kelas.\n\n" +
         (
           data && data.message
             ? data.message
-            : "Ralat tidak diketahui."
+            : "Tiada respons berjaya daripada SATS."
         )
       );
-
       return;
     }
 
+    /* ==========================================
+       BACKEND BERJAYA.
+       GUNAKAN SENARAI KELAS DARIPADA BACKEND
+       DAN JANGAN PANGGIL loadClasses(), kerana
+       loadClasses() boleh menggunakan cache lama.
+       ========================================== */
+
     const updatedClasses =
       Array.isArray(data.classes)
-        ? data.classes
+        ? data.classes.map(function(item) {
+            return String(item || "").trim();
+          }).filter(Boolean)
         : [];
 
-    allClasses =
-      updatedClasses.slice();
+    allClasses = updatedClasses.slice();
+    satsClassesReady = true;
 
-    satsClassesReady =
-      true;
-
-    satsStudentsReady =
-      false;
-
-    allStudents = [];
-
-    renderSettingsClasses(
-      updatedClasses
-    );
-
+    /* Paparkan senarai kelas terkini. */
+    renderSettingsClasses(updatedClasses);
     populateAllClassSelectors();
 
-    ensureStudentsLoaded(
-      function() {
-        renderStudentDataFromCache();
+    /*
+     * Paksa data murid dimuat semula kerana
+     * backend turut memadam murid kelas ini.
+     */
+    satsStudentsReady = false;
+    allStudents = [];
+
+    /*
+     * Ambil data murid TERKINI terus daripada backend.
+     * Jangan gunakan cache lama.
+     */
+    callSATS(
+      SATS_API + "?action=getStudents",
+      function(studentData) {
+
+        if (
+          studentData &&
+          studentData.success === true
+        ) {
+          allStudents =
+            Array.isArray(studentData.students)
+              ? studentData.students
+              : [];
+
+          satsStudentsReady = true;
+
+          renderStudentDataFromCache();
+        }
       }
     );
 
@@ -9783,7 +9812,13 @@ function deleteClassSetting(
       "✅ Kelas " +
       className +
       " berjaya dipadam.\n\n" +
-      "Murid dalam kelas tersebut juga telah dipadam."
+      "Murid dalam kelas tersebut juga telah dipadam.\n\n" +
+      "Jumlah murid dipadam: " +
+      (
+        typeof data.deletedStudents === "number"
+          ? data.deletedStudents
+          : "-"
+      )
     );
 
   });
